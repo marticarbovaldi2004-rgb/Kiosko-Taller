@@ -1,0 +1,3367 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Taller Terrassa 102 | Terminal Táctil Operativo</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN con fallback seguro -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            workshop: {
+              bg: '#0A0E17',
+              card: '#111827',
+              border: '#1F2937',
+              accent: '#06B6D4',
+              mint: '#10B981',
+              rose: '#F43F5E',
+              amber: '#F59E0B',
+              purple: '#A855F7',
+              blue: '#3B82F6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      box-sizing: border-box;
+    }
+    input, textarea, select {
+      user-select: text;
+    }
+    body {
+      background-color: #0A0E17;
+      color: #F3F4F6;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      touch-action: manipulation;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0A0E17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1F2937;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
+    .touch-btn:active {
+      transform: scale(0.97);
+    }
+    @keyframes pulse-critical {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.03); }
+    }
+    .incidencia-pulsing {
+      animation: pulse-critical 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-[#0A0E17] text-slate-100 flex flex-col min-h-screen">
+
+  <!-- ============================================== -->
+  <!-- CABECERA PRINCIPAL                             -->
+  <!-- ============================================== -->
+  <header class="sticky top-0 z-40 bg-[#111827]/95 backdrop-blur-md border-b border-slate-800 shadow-2xl px-3 py-2.5 sm:px-6">
+    <div class="max-w-[1550px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Marca Taller -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchNavTab('basicos')">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-white font-black text-xl">
+          <i data-lucide="wrench" class="w-5 h-5">🔧</i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+              <span>Taller Terrassa 102</span>
+              <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-400 border border-cyan-500/25">Decathlon</span>
+            </h1>
+          </div>
+          <p class="text-[11px] font-semibold text-slate-400 flex items-center gap-2">
+            <span>Terminal Táctil Operativo</span>
+            <span class="inline-block w-1 h-1 rounded-full bg-slate-600"></span>
+            <span class="text-emerald-400 font-mono font-bold" id="headerSummaryPending">Cargando estándares...</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Mini Dashboard Cabecera (4 KPIs en 2 filas de 2) -->
+      <div id="headerKpiDashboard" class="grid grid-cols-2 gap-x-4 gap-y-1 bg-slate-950/90 border border-slate-800 rounded-2xl px-3.5 py-1.5 shadow-inner">
+        <!-- Fila 1: Preferentes y Diagnósticos -->
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Pref (≥40%):</span>
+          <span id="kpiPrefVal" class="font-mono text-xs font-black text-emerald-400">--%</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Diag (≥60%):</span>
+          <span id="kpiDiagVal" class="font-mono text-xs font-black text-emerald-400">--%</span>
+        </div>
+        <!-- Fila 2: VV y Cesta Media -->
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">VV (≥+10%):</span>
+          <span id="kpiVvVal" class="font-mono text-xs font-black text-emerald-400">--%</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">C. Media (≥40€):</span>
+          <span id="kpiCestaVal" class="font-mono text-xs font-black text-emerald-400">--€</span>
+        </div>
+      </div>
+
+      <!-- Reloj en vivo y Retorno Kiosco -->
+      <div class="flex items-center gap-3">
+        <!-- Badge Alerta Incidencia Urgente / Crítica -->
+        <div id="headerIncidenciaAlert" class="hidden cursor-pointer touch-btn" onclick="switchNavTab('incidencias')">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-400 text-xs font-black incidencia-pulsing">
+            <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-500">⚠️</i>
+            <span id="headerIncidenciaCount">1 INCIDENCIA CRÍTICA</span>
+          </div>
+        </div>
+
+        <!-- Reloj Digital -->
+        <div class="flex items-center gap-3 bg-slate-950/90 border border-slate-800 rounded-2xl px-3.5 py-1.5 shadow-inner">
+          <i data-lucide="clock" class="w-4 h-4 text-cyan-400">⏰</i>
+          <div class="text-right">
+            <div id="liveClock" class="font-mono text-sm sm:text-base font-extrabold text-white tracking-wider leading-none">00:00:00</div>
+            <div id="liveDate" class="text-[10px] font-semibold text-slate-400 capitalize leading-none mt-1">Hoy</div>
+          </div>
+        </div>
+
+        <!-- Temporizador de Auto-Retorno al Kiosco -->
+        <div id="kioskIdleContainer" class="hidden flex items-center gap-2 bg-amber-500/15 border border-amber-500/30 text-amber-300 px-3 py-1.5 rounded-2xl text-xs font-mono font-bold">
+          <i data-lucide="timer" class="w-4 h-4 text-amber-400 animate-spin">⏱️</i>
+          <span>Retorno: <b id="idleSeconds">60</b>s</span>
+          <button onclick="returnToKiosk()" class="ml-1 bg-amber-500/20 hover:bg-amber-500/40 p-1 rounded-lg text-[10px] text-amber-200 uppercase font-black">Salir</button>
+        </div>
+      </div>
+
+      <!-- Menú de Navegación Táctil Completo -->
+      <nav class="w-full flex items-center gap-1.5 overflow-x-auto pb-1 mt-1" id="mainNavBar">
+        <button onclick="switchNavTab('basicos')" id="nav-btn-basicos" class="touch-btn nav-tab-btn active px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-2 bg-cyan-600 text-slate-950 shadow-lg shadow-cyan-600/30 transition flex-shrink-0">
+          <i data-lucide="shield-check" class="w-4 h-4">🛡️</i>
+          <span>1. Básicos a garantizar</span>
+        </button>
+
+        <button onclick="switchNavTab('kiosco')" id="nav-btn-kiosco" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="users" class="w-4 h-4 text-cyan-400">👥</i>
+          <span>2. Kiosco Técnicos</span>
+        </button>
+
+        <button onclick="switchNavTab('tratado')" id="nav-btn-tratado" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="phone-forwarded" class="w-4 h-4 text-emerald-400">📞</i>
+          <span>3. Tratado y Disponible</span>
+          <span id="navTratadoBadge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500 text-slate-950 font-black">0</span>
+        </button>
+
+        <button onclick="switchNavTab('planning')" id="nav-btn-planning" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="calendar" class="w-4 h-4 text-amber-400">📅</i>
+          <span>4. Planning Horario</span>
+        </button>
+
+        <button onclick="switchNavTab('matriz')" id="nav-btn-matriz" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="clock-4" class="w-4 h-4 text-cyan-400">🕒</i>
+          <span>5. Matriz IN/OUT</span>
+        </button>
+
+        <button onclick="switchNavTab('pedidos')" id="nav-btn-pedidos" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="package" class="w-4 h-4 text-amber-400">📦</i>
+          <span>6. Pedidos TT</span>
+          <span id="navPedidosBadge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-slate-950 font-black">0</span>
+        </button>
+
+        <button onclick="switchNavTab('incidencias')" id="nav-btn-incidencias" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400">⚠️</i>
+          <span>7. Incidencias</span>
+          <span id="navIncidenciasBadge" class="hidden px-1.5 py-0.2 rounded-full text-[10px] bg-rose-600 text-white font-black incidencia-pulsing">0</span>
+        </button>
+
+        <button onclick="switchNavTab('enlaces')" id="nav-btn-enlaces" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="external-link" class="w-4 h-4 text-purple-400">🔗</i>
+          <span>8. Enlaces Útiles</span>
+        </button>
+
+        <button onclick="switchNavTab('reporting')" id="nav-btn-reporting" class="touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0">
+          <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-400">📊</i>
+          <span>9. Reporting &amp; KPIs</span>
+        </button>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- ============================================== -->
+  <!-- CONTENEDOR MULTI-VISTA                         -->
+  <!-- ============================================== -->
+  <main class="flex-1 max-w-[1550px] mx-auto w-full p-3 sm:p-6 flex flex-col">
+
+    <!-- 1. BÁSICOS A GARANTIZAR (PÁGINA PRINCIPAL) -->
+    <section id="tabBasicos" class="space-y-6 flex-1 flex flex-col">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/20 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-cyan-500/15 text-cyan-400 font-black px-2.5 py-1 rounded-xl border border-cyan-500/30 uppercase tracking-wider">Imprescindibles de Taller</span>
+            <span class="text-xs text-slate-400 font-mono">Terrassa 102</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Básicos a garantizar</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Estándares operacionales diarios a mantener por todo el equipo de forma continua durante toda la jornada.</p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="bg-slate-950 px-4 py-2 rounded-2xl border border-slate-800 text-xs font-mono font-bold flex items-center gap-2 text-slate-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="basicosProgressCounter">0/0 Garantizados</span>
+          </div>
+          <button onclick="openBasicoModal(null)" class="touch-btn bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-cyan-600/30 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4">➕</i>
+            <span>+ Añadir Básico</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8" id="basicosContainer">
+        <!-- Inyección Dinámica -->
+      </div>
+    </section>
+
+    <!-- 2. KIOSCO TÉCNICOS -->
+    <section id="tabKiosco" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-3xl shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-black">
+            <i data-lucide="users" class="w-5 h-5">👥</i>
+          </div>
+          <div>
+            <h2 class="text-base sm:text-lg font-black text-white">Cuadrícula de Mecánicos</h2>
+            <p class="text-xs text-slate-400">Toca tu tarjeta para revisar tus tareas asignadas del checklist y registrar conformidades.</p>
+          </div>
+        </div>
+
+        <button onclick="openTechEditModal(null)" class="touch-btn bg-purple-600 hover:bg-purple-500 text-white font-black py-2 px-3.5 rounded-xl flex items-center gap-1.5 text-xs shadow-md transition self-start sm:self-auto">
+          <i data-lucide="user-plus" class="w-4 h-4">👤</i>
+          <span>+ Añadir / Gestionar Técnico</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-8" id="techniciansGrid">
+        <!-- Render dinámico -->
+      </div>
+    </section>
+
+    <!-- SUB-VISTA: CHECKLIST TÉCNICO INDIVIDUAL -->
+    <section id="viewIndividualTech" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-900 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-4">
+          <button onclick="returnToKiosk()" class="touch-btn p-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl border border-slate-700 flex items-center justify-center">
+            <i data-lucide="arrow-left" class="w-6 h-6">⬅️</i>
+          </button>
+          
+          <div id="techDetailAvatarWrapper" class="relative"></div>
+
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 id="techDetailName" class="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">MARTÍ</h2>
+              <span id="techDetailRoleBadge" class="text-xs font-black uppercase px-2.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Mecánico</span>
+            </div>
+            <p id="techDetailScheduleDesc" class="text-xs text-slate-400 mt-0.5 font-medium flex items-center gap-2">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-cyan-400">📅</i>
+              <span>Turno hoy programado</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 bg-slate-950/80 border border-slate-800 p-3 sm:px-5 sm:py-3 rounded-2xl">
+          <div class="text-right">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Cumplimiento Checklist</div>
+            <div id="techDetailProgressText" class="text-2xl font-black text-white font-mono leading-none">0/0</div>
+          </div>
+          <div class="w-14 h-14 relative flex items-center justify-center">
+            <svg class="w-full h-full -rotate-90" viewBox="0 0 36 36">
+              <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path id="techDetailProgressCircle" class="text-emerald-400 transition-all duration-500" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            </svg>
+            <span id="techDetailPercent" class="absolute text-[11px] font-black font-mono text-emerald-400">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtro frecuencia -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1">
+        <button onclick="filterTechTasks('all')" id="filter-btn-all" class="touch-btn filter-freq-btn active px-4 py-2 rounded-xl text-xs font-black bg-cyan-600 text-slate-950">Todas las Tareas</button>
+        <button onclick="filterTechTasks('Diario')" id="filter-btn-Diario" class="touch-btn filter-freq-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Diarias</button>
+        <button onclick="filterTechTasks('Semanal')" id="filter-btn-Semanal" class="touch-btn filter-freq-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Semanales</button>
+        <button onclick="filterTechTasks('Mensual')" id="filter-btn-Mensual" class="touch-btn filter-freq-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Mensuales</button>
+      </div>
+
+      <!-- Lista Tareas -->
+      <div id="techTasksContainer" class="space-y-3 pb-8"></div>
+    </section>
+
+    <!-- 3. TRATADO Y DISPONIBLE -->
+    <section id="tabTratado" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/20 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-emerald-500/15 text-emerald-400 font-black px-2.5 py-1 rounded-xl border border-emerald-500/30 uppercase tracking-wider">Mostrador &amp; Salidas</span>
+            <span class="text-xs text-slate-400 font-mono">Bicis Listas para Entrega</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Tratado y Disponible</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Control de llamadas y correos a clientes, cobros pendientes y seguimiento de avisos.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="openTratadoModal(null)" class="touch-btn bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-emerald-500/30 transition">
+            <i data-lucide="plus" class="w-4 h-4">➕</i>
+            <span>+ Nueva Nota Tratada</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtros de llamadas -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1">
+        <button onclick="filterTratado('all')" id="flt-trat-all" class="touch-btn trat-flt active px-3.5 py-1.5 rounded-xl text-xs font-black bg-cyan-600 text-slate-950">Todas</button>
+        <button onclick="filterTratado('0')" id="flt-trat-0" class="touch-btn trat-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Sin Llamadas (0/3)</button>
+        <button onclick="filterTratado('1')" id="flt-trat-1" class="touch-btn trat-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">1ª Llamada (1/3)</button>
+        <button onclick="filterTratado('2')" id="flt-trat-2" class="touch-btn trat-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">2ª Llamada (2/3)</button>
+        <button onclick="filterTratado('3')" id="flt-trat-3" class="touch-btn trat-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">3ª Llamada (3/3)</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8" id="tratadoContainer"></div>
+    </section>
+
+    <!-- 4. PLANNING HORARIO (GANTT HORIZONTAL) -->
+    <section id="tabPlanning" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-slate-900 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-amber-500/15 text-amber-400 font-black px-2.5 py-1 rounded-xl border border-amber-500/30 uppercase tracking-wider">Línea Temporal de Planta</span>
+            <span class="text-xs text-slate-400 font-mono">07:00 - 22:00</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Planning Diario de Taller</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Visión gráfica de presencia, solapes y roles asignados a lo largo de la jornada.</p>
+        </div>
+
+        <!-- Selector de fecha táctil -->
+        <div class="flex items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800">
+          <button onclick="changePlanningDay(-1)" class="touch-btn p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300">
+            <i data-lucide="chevron-left" class="w-5 h-5">◀</i>
+          </button>
+          
+          <div class="flex items-center gap-2 px-2">
+            <input type="date" id="planningDatePicker" onchange="onPlanningDateChange(this.value)" class="bg-transparent text-white font-mono font-bold text-xs outline-none cursor-pointer">
+            <span id="planningDateLabel" class="text-xs font-black uppercase text-cyan-400 font-mono">Hoy</span>
+          </div>
+
+          <button onclick="changePlanningDay(1)" class="touch-btn p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300">
+            <i data-lucide="chevron-right" class="w-5 h-5">▶</i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Leyenda de Roles -->
+      <div class="flex items-center gap-3 flex-wrap text-xs bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 shadow-inner">
+        <span class="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Roles del Turno:</span>
+        <div class="flex items-center gap-1.5 bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-800/40"><span class="w-3 h-3 rounded-md bg-cyan-400"></span><span class="font-bold text-cyan-200">Rol IN (Taller &amp; Potro)</span></div>
+        <div class="flex items-center gap-1.5 bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-800/40"><span class="w-3 h-3 rounded-md bg-amber-400"></span><span class="font-bold text-amber-200">Rol OUT (Mostrador &amp; Citas)</span></div>
+        <div class="flex items-center gap-1.5 bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-800/40"><span class="w-3 h-3 rounded-md bg-emerald-400"></span><span class="font-bold text-emerald-200">2ª Vida / Buyback</span></div>
+        <div class="flex items-center gap-1.5 bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-800/40"><span class="w-3 h-3 rounded-md bg-purple-400"></span><span class="font-bold text-purple-200">Descanso / Gestión / EID</span></div>
+      </div>
+
+      <!-- Cuadrícula Gantt Horizontal Unificada (07:00 a 22:00 = 15 Horas) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl overflow-x-auto">
+        <div class="min-w-[1250px] space-y-2">
+          <!-- Cabecera de Horas Alineada: 200px para mecánico + 15 columnas uniformes -->
+          <div class="flex items-center font-mono text-xs font-black text-slate-300 border-b border-slate-800 pb-3">
+            <div class="w-[200px] flex-shrink-0 text-left pl-3 text-slate-400 uppercase text-[11px] tracking-wider">
+              Mecánico
+            </div>
+            <div class="flex-1 flex text-center divide-x divide-slate-800/50">
+              <div class="flex-1">07h</div>
+              <div class="flex-1">08h</div>
+              <div class="flex-1">09h</div>
+              <div class="flex-1">10h</div>
+              <div class="flex-1">11h</div>
+              <div class="flex-1">12h</div>
+              <div class="flex-1">13h</div>
+              <div class="flex-1">14h</div>
+              <div class="flex-1">15h</div>
+              <div class="flex-1">16h</div>
+              <div class="flex-1">17h</div>
+              <div class="flex-1">18h</div>
+              <div class="flex-1">19h</div>
+              <div class="flex-1">20h</div>
+              <div class="flex-1">21h</div>
+            </div>
+          </div>
+
+          <!-- Filas de Técnicos -->
+          <div id="planningTimelineRows" class="space-y-3 pt-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. MATRIZ FRANJAS HORARIAS IN / OUT -->
+    <section id="tabMatriz" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/20 border border-slate-800 p-5 sm:p-7 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-emerald-500/15 text-emerald-400 font-black px-3 py-1 rounded-xl border border-emerald-500/30 uppercase tracking-wider">Matriz Operativa Oficial</span>
+            <span class="text-xs text-slate-400 font-mono">Terrassa 102 &bull; 07:00 - 21:30</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1.5">Franjas Horarias: Rol IN &amp; Rol OUT</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-4">
+            <span class="inline-flex items-center gap-1.5 text-cyan-300 font-bold bg-cyan-950/30 px-2.5 py-0.5 rounded-lg border border-cyan-800/40"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Rol IN = Reparación, Mecánica &amp; Taller Interno</span>
+            <span class="inline-flex items-center gap-1.5 text-amber-300 font-bold bg-amber-950/30 px-2.5 py-0.5 rounded-lg border border-amber-800/40"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Rol OUT = Atención Cliente, Mostrador &amp; Citas</span>
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <div id="liveSlotBadge" class="bg-slate-950 border-2 border-emerald-500/50 text-emerald-300 font-mono text-xs px-4 py-2.5 rounded-2xl flex items-center gap-2.5 shadow-lg">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>Franja Activa: <b id="currentActiveSlotName" class="text-white">Detectando...</b></span>
+          </div>
+          <button onclick="openMatrizSlotModal(null)" class="touch-btn bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-emerald-500/30 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4">➕</i>
+            <span>+ Añadir Franja</span>
+          </button>
+          <button onclick="resetMatrizSlotsToDefault()" class="touch-btn bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-3 rounded-2xl flex items-center gap-1.5 text-xs border border-slate-700 transition" title="Restaurar franjas del Excel">
+            <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400">🔄</i>
+            <span>Restaurar</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="matrizSlotsContainer" class="space-y-5 pb-8"></div>
+    </section>
+
+    <!-- 6. PEDIDOS TT -->
+    <section id="tabPedidos" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/20 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-amber-500/15 text-amber-400 font-black px-2.5 py-1 rounded-xl border border-amber-500/30 uppercase tracking-wider">Aprovisionamiento</span>
+            <span class="text-xs text-slate-400 font-mono">Recambios y Piezas TT</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Pedidos de Piezas TT</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Control de referencias pedidas a central/proveedor, seguimiento de envíos y notas asociadas.</p>
+        </div>
+
+        <button onclick="openPedidoModal(null)" class="touch-btn bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-amber-500/30 transition">
+          <i data-lucide="package-plus" class="w-4 h-4">📦</i>
+          <span>+ Nuevo Pedido TT</span>
+        </button>
+      </div>
+
+      <!-- Filtros de Pedidos -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1">
+        <button onclick="filterPedidos('all')" id="flt-ped-all" class="touch-btn ped-flt active px-3.5 py-1.5 rounded-xl text-xs font-black bg-cyan-600 text-slate-950">Todos</button>
+        <button onclick="filterPedidos('Pendiente')" id="flt-ped-pend" class="touch-btn ped-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Pendientes</button>
+        <button onclick="filterPedidos('En tránsito')" id="flt-ped-tran" class="touch-btn ped-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">En Tránsito</button>
+        <button onclick="filterPedidos('Recibido')" id="flt-ped-rec" class="touch-btn ped-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Recibidos</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8" id="pedidosContainer"></div>
+    </section>
+
+    <!-- 7. INCIDENCIAS -->
+    <section id="tabIncidencias" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-rose-950/20 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-rose-500/15 text-rose-400 font-black px-2.5 py-1 rounded-xl border border-rose-500/30 uppercase tracking-wider">Gestión de Bloqueos &amp; Averías</span>
+            <span class="text-xs text-slate-400 font-mono">Taller Terrassa 102</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Incidencias de Taller</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Control de piezas rotas, herramientas averiadas, desabastecimientos y reclamaciones urgentes.</p>
+        </div>
+
+        <button onclick="openIncidenciaModal(null)" class="touch-btn bg-rose-600 hover:bg-rose-500 text-white font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-rose-600/30 transition">
+          <i data-lucide="plus-circle" class="w-4 h-4">➕</i>
+          <span>+ Nueva Incidencia</span>
+        </button>
+      </div>
+
+      <!-- Filtros de Incidencias -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1">
+        <button onclick="filterIncidencias('all')" id="flt-inc-all" class="touch-btn inc-flt active px-3.5 py-1.5 rounded-xl text-xs font-black bg-cyan-600 text-slate-950">Todas</button>
+        <button onclick="filterIncidencias('Abierta')" id="flt-inc-open" class="touch-btn inc-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Abiertas</button>
+        <button onclick="filterIncidencias('En curso')" id="flt-inc-prog" class="touch-btn inc-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">En Curso</button>
+        <button onclick="filterIncidencias('Incidencia crítica')" id="flt-inc-crit" class="touch-btn inc-flt px-3.5 py-1.5 rounded-xl text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/30">Incidencias Críticas</button>
+        <button onclick="filterIncidencias('Resuelta')" id="flt-inc-res" class="touch-btn inc-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800">Resueltas</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8" id="incidenciasContainer"></div>
+    </section>
+
+    <!-- 8. ENLACES ÚTILES -->
+    <section id="tabEnlaces" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-purple-950/20 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-purple-500/15 text-purple-400 font-black px-2.5 py-1 rounded-xl border border-purple-500/30 uppercase tracking-wider">Accesos Directos</span>
+            <span class="text-xs text-slate-400 font-mono">Portales Corporativos Decathlon</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Enlaces Útiles del Taller</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Accede directamente a iCare, ePlanning+, SPV B2B, Buyback y prevención.</p>
+        </div>
+
+        <button onclick="openEnlaceModal(null)" class="touch-btn bg-purple-600 hover:bg-purple-500 text-white font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-purple-600/30 transition">
+          <i data-lucide="plus" class="w-4 h-4">➕</i>
+          <span>+ Añadir Enlace</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-8" id="enlacesContainer"></div>
+    </section>
+
+    <!-- 9. REPORTING & KPIS -->
+    <section id="tabReporting" class="hidden space-y-6 flex-1 flex flex-col">
+      <div class="bg-slate-900 border border-slate-800 p-4 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-blue-500/15 text-blue-400 font-black px-2.5 py-1 rounded-xl border border-blue-500/30 uppercase tracking-wider">Auditoría Operativa</span>
+            <span class="text-xs text-slate-400 font-mono">Terrassa 102</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Reporting &amp; Métricas</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Control de cumplimiento de checklist, estado de llamadas, pedidos y balance general.</p>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <!-- Botón Requerido: Editar Dashboard -->
+          <button onclick="openEditDashboardModal()" class="touch-btn bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-cyan-600/30 transition">
+            <i data-lucide="layout-dashboard" class="w-4 h-4">📊</i>
+            <span>Editar Dashboard</span>
+          </button>
+
+          <button onclick="exportFullAuditCSV()" class="touch-btn bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs shadow-lg shadow-emerald-600/30 transition">
+            <i data-lucide="download" class="w-4 h-4">💾</i>
+            <span>Exportar Informe CSV</span>
+          </button>
+          <button onclick="resetChecklistDaily()" class="touch-btn bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-4 rounded-2xl flex items-center gap-2 text-xs border border-slate-700 transition">
+            <i data-lucide="rotate-ccw" class="w-4 h-4 text-amber-400">🔄</i>
+            <span>Reiniciar Checklist a Pendiente</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="reportingCardsGrid"></div>
+    </section>
+
+  </main>
+
+  <!-- ============================================== -->
+  <!-- MODALES DE EDICIÓN Y GESTIÓN                   -->
+  <!-- ============================================== -->
+
+  <!-- Modal 1: Añadir / Editar Básico a Garantizar -->
+  <div id="modalBasico" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="modalBasicoTitle" class="text-xl font-black text-white">Editar Estándar Básico</h3>
+        <button onclick="closeBasicoModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="editBasicoId">
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Descripción del Estándar</label>
+          <textarea id="basicoTextInput" rows="3" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl p-3 text-xs text-white outline-none resize-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Categoría</label>
+            <input type="text" id="basicoCatInput" placeholder="5S, Seguridad, EPIs..." class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-2 text-xs text-white outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Responsable</label>
+            <input type="text" id="basicoRespInput" placeholder="Todo el Equipo, Rol IN..." class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-2 text-xs text-white outline-none">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button id="btnDeleteBasico" onclick="deleteBasicoCurrent()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Eliminar</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeBasicoModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="saveBasicoCurrent()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-cyan-600 text-slate-950 shadow-lg shadow-cyan-600/30">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Añadir / Editar Nota Tratado y Disponible -->
+  <div id="modalTratado" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="modalTratadoTitle" class="text-xl font-black text-white">Nota Tratado y Disponible</h3>
+        <button onclick="closeTratadoModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="editTratadoId">
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Nº Nota iCare</label>
+            <input type="text" id="tratadoNumber" placeholder="Ej: 102-8921" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Importe Total (€)</label>
+            <input type="number" step="0.01" id="tratadoPrice" placeholder="Ej: 45.00" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Nombre Cliente</label>
+            <input type="text" id="tratadoCustomer" placeholder="Nombre cliente" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Teléfono</label>
+            <input type="tel" id="tratadoPhone" placeholder="600 000 000" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Correo Electrónico</label>
+          <input type="email" id="tratadoEmail" placeholder="cliente@correo.com" class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Resumen de la Reparación</label>
+          <input type="text" id="tratadoSummary" placeholder="Ej: Cambio de pastillas hidráulicas, purgado..." class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white outline-none">
+        </div>
+
+        <!-- Avisos Llamadas -->
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Avisos Telefónicos (Marcar hasta 3)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="toggleModalCallBadge(1)" id="modCallBtn1" class="touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs">Llamada 1</button>
+            <button type="button" onclick="toggleModalCallBadge(2)" id="modCallBtn2" class="touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs">Llamada 2</button>
+            <button type="button" onclick="toggleModalCallBadge(3)" id="modCallBtn3" class="touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs">Llamada 3</button>
+          </div>
+        </div>
+
+        <!-- Avisos Correos -->
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Avisos Email (Marcar hasta 3)</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="toggleModalEmailBadge(1)" id="modEmailBtn1" class="touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs">Email 1</button>
+            <button type="button" onclick="toggleModalEmailBadge(2)" id="modEmailBtn2" class="touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs">Email 2</button>
+            <button type="button" onclick="toggleModalEmailBadge(3)" id="modEmailBtn3" class="touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs">Email 3</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Última Llamada</label>
+            <input type="text" id="tratadoLastCall" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-1.5 text-xs text-white font-mono outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Último Email</label>
+            <input type="text" id="tratadoLastEmail" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-1.5 text-xs text-white font-mono outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Notas y Comentarios de la Llamada</label>
+          <textarea id="tratadoNotes" rows="2" placeholder="Apuntar lo hablado: viene el sábado, avisa de recogerlo su hermano..." class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-2xl p-3 text-xs text-white outline-none resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button id="btnDeleteTratado" onclick="deleteTratadoCurrent()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Eliminar</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeTratadoModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="saveTratadoCurrent()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Añadir / Editar Incidencia de Taller -->
+  <div id="modalIncidencia" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-rose-500/50 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 id="modalIncidenciaTitle" class="text-xl font-black text-white">Incidencia de Taller</h3>
+          <p class="text-xs text-slate-400">Terrassa 102 &bull; Registro y asignación</p>
+        </div>
+        <button onclick="closeIncidenciaModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="editIncidenciaId">
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Título de la Incidencia</label>
+          <input type="text" id="incTitle" placeholder="Ej: Compresor pierde presión continua..." class="w-full bg-slate-950 border-2 border-slate-700 focus:border-rose-500 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Gravedad / Prioridad</label>
+            <select id="incSeverity" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-rose-500 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none">
+              <option value="Baja">Baja (Mejora / Observación)</option>
+              <option value="Media">Media (Atender en la jornada)</option>
+              <option value="Alta">Alta (Impacto directo en taller)</option>
+              <option value="Incidencia crítica">Incidencia crítica (Bloqueo crítico)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Asignar Responsable</label>
+            <select id="incAssigneeSelect" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none"></select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Estado</label>
+            <select id="incStatus" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none">
+              <option value="Abierta">Abierta</option>
+              <option value="En curso">En curso</option>
+              <option value="Resuelta">Resuelta</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Fecha de Registro</label>
+            <input type="text" id="incDate" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3.5 py-2 text-xs text-white font-mono outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Detalle del Problema &amp; Acciones Tomadas</label>
+          <textarea id="incDescription" rows="3" placeholder="Descripción detallada de la anomalía, piezas afectadas o acción correctiva..." class="w-full bg-slate-950 border border-slate-700 focus:border-rose-500 rounded-2xl p-3 text-xs text-white outline-none resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button id="btnDeleteIncidencia" onclick="deleteIncidenciaCurrent()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Eliminar</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeIncidenciaModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="saveIncidenciaCurrent()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Añadir / Editar Enlace Útil -->
+  <div id="modalEnlace" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="modalEnlaceTitle" class="text-xl font-black text-white">Editar Enlace</h3>
+        <button onclick="closeEnlaceModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="editEnlaceId">
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Título de la Plataforma</label>
+          <input type="text" id="enlaceTitle" placeholder="Ej: iCare Taller..." class="w-full bg-slate-950 border-2 border-slate-700 focus:border-purple-400 rounded-2xl px-3 py-2 text-xs text-white font-bold outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">URL (Enlace Web)</label>
+          <input type="url" id="enlaceUrl" placeholder="https://..." class="w-full bg-slate-950 border-2 border-slate-700 focus:border-purple-400 rounded-2xl px-3 py-2 text-xs text-cyan-400 font-mono outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Descripción Breve</label>
+          <textarea id="enlaceDesc" rows="2" placeholder="Uso principal: órdenes de trabajo, recambios..." class="w-full bg-slate-950 border border-slate-700 focus:border-purple-400 rounded-2xl p-3 text-xs text-white outline-none resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button id="btnDeleteEnlace" onclick="deleteEnlaceCurrent()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Eliminar</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeEnlaceModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="saveEnlaceCurrent()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-purple-600 text-white shadow-lg shadow-purple-600/30">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Asignar Tramo en Planning Gantt -->
+  <div id="modalPlanningBlock" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-xl font-black text-white">Turno &amp; Rol Técnico</h3>
+          <p id="modalPlanningSubtitle" class="text-xs text-slate-400">Asignar tramo horario</p>
+        </div>
+        <button onclick="closePlanningModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="planTechId">
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Hora Inicio</label>
+            <select id="planStartHour" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3 py-2 text-xs text-white font-mono font-bold outline-none"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Hora Fin</label>
+            <select id="planEndHour" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3 py-2 text-xs text-white font-mono font-bold outline-none"></select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Rol en este tramo</label>
+          <select id="planRoleSelect" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3 py-2 text-xs text-white font-bold outline-none">
+            <option value="Rol IN (Taller & Potro)">Rol IN (Taller &amp; Potro)</option>
+            <option value="Rol OUT (Mostrador & Citas)">Rol OUT (Mostrador &amp; Citas)</option>
+            <option value="2ª Vida / Buyback">2ª Vida / Buyback</option>
+            <option value="Descanso / EID / Gestión">Descanso / EID / Gestión</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button onclick="clearTechDayBlocks()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Vaciar Día</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closePlanningModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="addPlanningBlock()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30">Añadir Tramo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Editar Técnico y Subir Foto -->
+  <div id="modalTechEdit" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h3 id="modalTechEditTitle" class="text-xl font-black text-white">Editar Perfil Mecánico</h3>
+        <button onclick="closeTechEditModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="editTechId">
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Nombre</label>
+          <input type="text" id="editTechName" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-4 py-2.5 text-white font-bold outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Rol / Especialidad</label>
+          <input type="text" id="editTechRole" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-4 py-2.5 text-white font-medium outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Fotografía del Técnico</label>
+          <div class="flex items-center gap-3 mb-2">
+            <div id="editTechPhotoPreview" class="w-14 h-14 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden font-black text-white text-lg"></div>
+            <div class="flex-1">
+              <input type="file" id="editTechPhotoFile" accept="image/*" class="text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-cyan-600 file:text-slate-950 hover:file:bg-cyan-500 cursor-pointer">
+            </div>
+          </div>
+          <input type="text" id="editTechPhotoUrl" placeholder="O pega enlace URL..." class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3 py-1.5 text-xs text-white outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button id="btnDeleteTech" onclick="deleteCurrentTech()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Eliminar</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeTechEditModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="saveCurrentTech()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-cyan-600 text-slate-950 shadow-lg shadow-cyan-600/30">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 7: Justificar Incidencia KO Checklist -->
+  <div id="modalKo" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-rose-500/50 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-500 flex items-center justify-center font-black">
+          <i data-lucide="alert-triangle" class="w-6 h-6">⚠️</i>
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-white uppercase">Registrar Incidencia (KO)</h3>
+          <p id="modalKoTaskTitle" class="text-xs text-slate-400 font-semibold line-clamp-1">Tarea...</p>
+        </div>
+      </div>
+
+      <textarea id="modalKoNotes" rows="4" placeholder="¿Cuál es la anomalía detectada?..." class="w-full bg-slate-950 border-2 border-slate-700 focus:border-rose-500 rounded-2xl p-4 text-sm text-white outline-none resize-none"></textarea>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button onclick="closeKoModal()" class="touch-btn px-5 py-2.5 rounded-2xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300">Cancelar</button>
+        <button onclick="confirmKoModal()" class="touch-btn px-6 py-2.5 rounded-2xl text-xs font-black bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30">Guardar KO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 8: Añadir / Editar Franja Horaria de la Matriz IN/OUT -->
+  <div id="modalMatrizSlot" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-emerald-500/40 rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 id="modalMatrizSlotTitle" class="text-xl font-black text-white">Editar Franja Horaria</h3>
+          <p class="text-xs text-slate-400">Matriz Operativa &bull; Terrassa 102</p>
+        </div>
+        <button onclick="closeMatrizSlotModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="editMatrizSlotId">
+
+      <div class="space-y-3.5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Hora Inicio (HH:MM)</label>
+            <input type="text" id="slotStartTime" placeholder="09:00" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-emerald-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Hora Fin (HH:MM)</label>
+            <input type="text" id="slotEndTime" placeholder="10:30" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-emerald-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Nombre / Período</label>
+            <input type="text" id="slotName" placeholder="Apertura, Pico..." class="w-full bg-slate-950 border-2 border-slate-700 focus:border-emerald-400 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-cyan-300 tracking-wider mb-1 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span>Rol IN (Taller Interno &amp; Reparaciones)</span>
+          </label>
+          <textarea id="slotRolIN" rows="2" placeholder="Tareas mecánicas, recepciones, diagnósticos, 5S..." class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-2xl p-3 text-xs text-white outline-none resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-amber-300 tracking-wider mb-1 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span>Rol OUT (Cliente &amp; Mostrador Taller)</span>
+          </label>
+          <textarea id="slotRolOUT" rows="2" placeholder="Atención cliente, citas, llamadas, Wallapop, cobro..." class="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-2xl p-3 text-xs text-white outline-none resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-emerald-300 tracking-wider mb-1">Foco Prioritario / Entregable</label>
+          <input type="text" id="slotFoco" class="w-full bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-2xl px-3.5 py-2 text-xs text-white outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-rose-300 tracking-wider mb-1">Puntos Críticos de Control</label>
+          <input type="text" id="slotControl" class="w-full bg-slate-950 border border-slate-700 focus:border-rose-400 rounded-2xl px-3.5 py-2 text-xs text-white outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button id="btnDeleteMatrizSlot" onclick="deleteMatrizSlotCurrent()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Eliminar Franja</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeMatrizSlotModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="saveMatrizSlotCurrent()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30">Guardar Franja</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 9: Añadir / Editar Pedido TT -->
+  <div id="modalPedido" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-500/40 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 id="modalPedidoTitle" class="text-xl font-black text-white">Pedido de Piezas TT</h3>
+          <p class="text-xs text-slate-400">Aprovisionamiento y seguimiento de piezas</p>
+        </div>
+        <button onclick="closePedidoModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <input type="hidden" id="editPedidoId">
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Nº Pedido / ODT iCare</label>
+            <input type="text" id="pedNumber" placeholder="Ej: PED-8812 o 102-841" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Proveedor / Ref.</label>
+            <input type="text" id="pedRef" placeholder="Ej: Shimano / 8521940" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Pieza / Descripción</label>
+          <input type="text" id="pedPiece" placeholder="Ej: Núcleo buje trasero 11v MicroSpline..." class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3.5 py-2 text-xs text-white font-medium outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Técnico Solicitante</label>
+            <select id="pedTechSelect" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Estado</label>
+            <select id="pedStatus" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-amber-400 rounded-2xl px-3.5 py-2 text-xs text-white font-bold outline-none">
+              <option value="Pendiente">Pendiente</option>
+              <option value="En tránsito">En tránsito</option>
+              <option value="Recibido">Recibido</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Fecha de Solicitud</label>
+          <input type="text" id="pedDate" class="w-full bg-slate-950 border border-slate-700 rounded-2xl px-3.5 py-2 text-xs text-white font-mono outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Observaciones / Cliente</label>
+          <textarea id="pedNotes" rows="2" placeholder="Detalles de urgencia, cliente avisado o fecha compromiso..." class="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-2xl p-3 text-xs text-white outline-none resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3">
+        <button id="btnDeletePedido" onclick="deletePedidoCurrent()" class="text-xs font-bold text-rose-400 hover:text-rose-300">Eliminar Pedido</button>
+        <div class="flex items-center gap-2">
+          <button onclick="closePedidoModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+          <button onclick="savePedidoCurrent()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30">Guardar Pedido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 10: Editar Dashboard de KPIs -->
+  <div id="modalEditDashboard" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-cyan-500/40 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-xl font-black text-white">Editar Dashboard KPIs</h3>
+          <p class="text-xs text-slate-400">Ajusta los valores actuales del taller</p>
+        </div>
+        <button onclick="closeEditDashboardModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">✕</button>
+      </div>
+
+      <div class="space-y-3.5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Preferentes (%) [≥40%]</label>
+            <input type="number" step="0.1" id="dashPrefInput" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Diagnósticos (%) [≥60%]</label>
+            <input type="number" step="0.1" id="dashDiagInput" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">VV (%) [≥+10%]</label>
+            <input type="number" step="0.1" id="dashVvInput" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-black uppercase text-slate-300 tracking-wider mb-1">Cesta Media (€) [≥40€]</label>
+            <input type="number" step="0.1" id="dashCestaInput" class="w-full bg-slate-950 border-2 border-slate-700 focus:border-cyan-400 rounded-2xl px-3.5 py-2 text-xs text-white font-mono font-bold outline-none">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3">
+        <button onclick="closeEditDashboardModal()" class="touch-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Cancelar</button>
+        <button onclick="saveDashboardCurrent()" class="touch-btn px-5 py-2 rounded-xl text-xs font-black bg-cyan-600 text-slate-950 shadow-lg shadow-cyan-600/30">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificación Toast -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 bg-slate-900 border-2 border-cyan-500 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-y-32 transition-all duration-300">
+    <span class="text-emerald-400 text-base">✓</span>
+    <span id="toastMsg" class="text-xs font-bold">Acción guardada</span>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- JAVASCRIPT: LÓGICA ROBUSTA Y AUTO-INICIALIZACIÓN -->
+  <!-- ============================================== -->
+  <script>
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function safeCreateIcons() {
+      try {
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+          lucide.createIcons();
+        }
+      } catch (e) {
+        console.warn('Lucide icons fallback:', e);
+      }
+    }
+
+    // DATOS DE FÁBRICA / INICIALES
+    const FACTORY_BASICOS = [
+      { id: 'b-1', text: '5S en mostrador y mostrador OUT 100% limpio sin albaranes sueltos ni herramientas.', cat: '5S Mostrador', resp: 'Rol OUT', done: true, time: 'Hoy 09:15' },
+      { id: 'b-2', text: 'Pasillos y zonas de tránsito totalmente despejados sin bicis cruzadas que entorpezcan.', cat: 'Seguridad', resp: 'Todo el Equipo', done: true, time: 'Hoy 09:30' },
+      { id: 'b-3', text: 'EPIs completos y vestimenta homologada reglamentaria en todo el equipo en potro.', cat: 'EPIs', resp: 'Todo el Equipo', done: true, time: 'Hoy 09:00' },
+      { id: 'b-4', text: 'Cero bicis en taller sin etiqueta de identificación o Hang Tag oficial de Segunda Vida.', cat: 'Trazabilidad', resp: 'Rol IN / 2ª Vida', done: false, time: 'Pendiente' },
+      { id: 'b-5', text: 'Panel de herramientas ordenado al minuto tras terminar cada intervención técnica.', cat: '5S Herramientas', resp: 'Rol IN', done: true, time: 'Hoy 11:00' },
+      { id: 'b-6', text: 'Cobro riguroso en caja y verificación de nota iCare antes de entregar la bicicleta.', cat: 'Caja & Cobro', resp: 'Rol OUT', done: false, time: 'Pendiente' },
+      { id: 'b-7', text: 'Compresor apagado y purgado obligatoriamente al cierre del taller.', cat: 'Cierre', resp: 'Cierre / Martí', done: false, time: 'Pendiente' }
+    ];
+
+    const FACTORY_TECHS = [
+      { id: 'tech-marti', name: 'MARTÍ', role: 'Mecánico / Seguridad Taller', photo: '', initials: 'MA', color: '#06B6D4' },
+      { id: 'tech-raul', name: 'RAUL', role: 'Mecánico / Logística 5S', photo: '', initials: 'RA', color: '#10B981' },
+      { id: 'tech-david', name: 'DAVID', role: 'Responsable Taller & EID', photo: '', initials: 'DA', color: '#8B5CF6' },
+      { id: 'tech-pau', name: 'PAU', role: 'Circularidad & Buyback', photo: '', initials: 'PA', color: '#F59E0B' },
+      { id: 'tech-robert', name: 'ROBERT', role: 'Mecánico / Comercial 2ª Vida', photo: '', initials: 'RO', color: '#EC4899' }
+    ];
+
+    const FACTORY_TASKS = [
+      // MARTÍ
+      { id: 't-m1', techId: 'tech-marti', title: 'Seguridad del compresor: Purgado, presión correcta, mantenimiento visible y señalización preventiva.', freq: 'Semanal', cat: 'Seguridad Compresor', status: 'pending', notes: '' },
+      { id: 't-m2', techId: 'tech-marti', title: 'Cableado de taller: Recogido/canalizado y libre de riesgos de tropiezo o contacto con agua/grasa.', freq: 'Semanal', cat: 'Seguridad Eléctrica', status: 'pending', notes: '' },
+      { id: 't-m3', techId: 'tech-marti', title: 'Contenedores de residuos: Correctamente segregados y vaciados (baterías, cubiertas, aerosoles, trapos).', freq: 'Semanal', cat: 'Medioambiente', status: 'pending', notes: '' },
+      { id: 't-m4', techId: 'tech-marti', title: 'Formación 100% equipo circular: Activa y validada en Buyback (tasación y criterios técnicos).', freq: 'Mensual', cat: 'Formación', status: 'pending', notes: '' },
+      { id: 't-m5', techId: 'tech-marti', title: 'Formación 100% equipo capacitado: En Diagnóstico Integral de Taller (prevención de notas erróneas o re-trabajos).', freq: 'Mensual', cat: 'Formación', status: 'pending', notes: '' },
+
+      // RAUL
+      { id: 't-r1', techId: 'tech-raul', title: 'Cementerio de bicicletas: Despejado, clasificado, limpio y seguro para tránsito de colaboradores.', freq: 'Diario', cat: '5S & Tránsito', status: 'pending', notes: '' },
+      { id: 't-r2', techId: 'tech-raul', title: 'Orden en soportes y ubicación: Colocación de bicis en taller para evitar pasillos bloqueados o caídas.', freq: 'Diario', cat: 'Organización Taller', status: 'pending', notes: '' },
+
+      // DAVID
+      { id: 't-d1', techId: 'tech-david', title: "Refresh operativa de seguridad: Repaso de seguridad en taller (calzado, ropa, equipo EPI's...) y cómo actuar en caso de emergencia.", freq: 'Mensual', cat: 'Seguridad Operativa', status: 'pending', notes: '' },
+      { id: 't-d2', techId: 'tech-david', title: 'Dominio y aplicación sistema icare: Control del sistema (trazabilidad, órdenes de órdenes, gestión recambios).', freq: 'Semanal', cat: 'Sistemas Taller', status: 'pending', notes: '' },
+      { id: 't-d3', techId: 'tech-david', title: 'Alineación de todo el equipo: En la Estrategia Circular (KPIs...).', freq: 'Mensual', cat: 'Estrategia Circular', status: 'pending', notes: '' },
+
+      // PAU
+      { id: 't-p1', techId: 'tech-pau', title: 'Stock 2ª Vida expuesto: 100% con Hang Tag oficial completo y procedencia indicada (saldo, alquiler, buyback).', freq: 'Semanal', cat: 'Segunda Vida', status: 'pending', notes: '' },
+
+      // ROBERT
+      { id: 't-ro1', techId: 'tech-robert', title: 'Exposición total del stock 2ª vida: Moderado en superficie comercial (integración con plan anti-demarca y consos).', freq: 'Semanal', cat: 'Superficie Comercial', status: 'pending', notes: '' }
+    ];
+
+    const FACTORY_TRATADO = [
+      {
+        id: 'trat-1',
+        number: '102-8492',
+        customer: 'Carlos Gómez',
+        phone: '622 341 890',
+        email: 'carlos.gomez@email.com',
+        price: 49.50,
+        summary: 'Ajuste de transmisión, centrado de rueda trasera y cambio pastillas.',
+        calls: [true, true, false],
+        lastCall: 'Hoy 10:45',
+        emails: [true, false, false],
+        lastEmail: 'Hoy 09:30',
+        notes: 'En la 2ª llamada indica que pasará el viernes por la tarde a recogerla y pagar.'
+      },
+      {
+        id: 'trat-2',
+        number: '102-8498',
+        customer: 'Mireia Valls',
+        phone: '655 890 123',
+        email: 'mireia.valls@email.com',
+        price: 24.00,
+        summary: 'Sustitución de cámara antipinchazo y revisión de presión en ambas ruedas.',
+        calls: [true, false, false],
+        lastCall: 'Hoy 09:20',
+        emails: [false, false, false],
+        lastEmail: 'Sin envíos',
+        notes: 'Buzón de voz en primer intento. Se deja mensaje de cortesía.'
+      },
+      {
+        id: 'trat-3',
+        number: '102-8501',
+        customer: 'Jordi Torrent',
+        phone: '611 445 789',
+        email: 'jtorrent@email.com',
+        price: 85.00,
+        summary: 'Revisión completa, purgado hidráulico Shimano y cambio de cadena KMC 11v.',
+        calls: [true, true, true],
+        lastCall: 'Ayer 18:30',
+        emails: [true, true, false],
+        lastEmail: 'Ayer 19:00',
+        notes: '3 intentos de llamada completados. Se le remitió recordatorio por correo electrónico.'
+      }
+    ];
+
+    const FACTORY_PEDIDOS = [
+      {
+        id: 'ped-1',
+        number: '102-8812',
+        ref: 'Shimano / 8521940',
+        piece: 'Núcleo de buje libre 11v MicroSpline',
+        techId: 'tech-david',
+        status: 'En tránsito',
+        date: 'Hoy 09:40',
+        notes: 'Urgente para bicicleta cliente en potro ODT #102-8841.'
+      },
+      {
+        id: 'ped-2',
+        number: '102-8835',
+        ref: 'SRAM / 774129',
+        piece: 'Juego de pastillas orgánicas Level TL',
+        techId: 'tech-marti',
+        status: 'Pendiente',
+        date: 'Hoy 11:15',
+        notes: 'Stock a cero en estantería de recambios consumibles.'
+      }
+    ];
+
+    const FACTORY_INCIDENCIAS = [
+      {
+        id: 'inc-1',
+        title: 'Falta de stock de núcleos Shimano 11v para reparar ODT #102-8841',
+        severity: 'Incidencia crítica',
+        assigneeId: 'tech-david',
+        status: 'En curso',
+        date: 'Hoy 10:15',
+        description: 'Bicicleta en potro con cliente esperando para mañana por la mañana. Se ha pedido recambio urgente al almacén central.'
+      },
+      {
+        id: 'inc-2',
+        title: 'Manómetro del compresor marca oscilaciones bruscas al purgar',
+        severity: 'Media',
+        assigneeId: 'tech-marti',
+        status: 'Abierta',
+        date: 'Hoy 09:00',
+        description: 'Requiere revisión de válvula de retención y cambio de teflón en racor.'
+      }
+    ];
+
+    const FACTORY_ENLACES = [
+      { id: 'enl-1', title: 'iCare Taller Europa', url: 'https://icare-europe.decathlon.net', desc: 'Gestión de notas de taller, trazabilidad de piezas, cobros y presupuestos oficiales.' },
+      { id: 'enl-2', title: 'ePlanning+ Horarios', url: 'https://eplanningplus.decathlon.net/', desc: 'Consulta y gestión de turnos, jornadas y planificación horaria de tienda.' },
+      { id: 'enl-3', title: 'Catálogo B2B / SPV Recambios', url: 'https://spv.decathlon.net', desc: 'Explosión de piezas de recambio, números de referencia técnicos y compatibilidades.' },
+      { id: 'enl-4', title: 'Plataforma Buyback Circular', url: 'https://buyback.decathlon.net', desc: 'Tasaciones oficiales de bicicletas de recompra para Segunda Vida.' },
+      { id: 'enl-5', title: 'Normativa EPIs & Seguridad', url: 'https://prevention.decathlon.net', desc: 'Manual de seguridad laboral en taller, fichas técnicas y protocolos de emergencia.' }
+    ];
+
+    const FACTORY_MATRIZ = [
+      {
+        id: 'slot-0',
+        time: '07:00 - 09:00',
+        name: 'Pre-Apertura y Preparación',
+        startMin: 7 * 60,
+        endMin: 9 * 60,
+        rolIN: 'Encendido de taller, chequeo de compresor, inspección de seguridad, revisión de entregas del día y puesta a punto de potros.',
+        rolOUT: 'Preparación de fichas de citas previas del día, revisión de correo y planning ePlanning+.',
+        foco: 'Arranque seguro y operativo.',
+        control: 'Compresor funcionando a presión nominal, potros libres.'
+      },
+      {
+        id: 'slot-1',
+        time: '09:00 - 10:30',
+        name: 'Apertura',
+        startMin: 9 * 60,
+        endMin: 10 * 60 + 30,
+        rolIN: 'Recepción de mercancía y recambios. Tratamiento de devoluciones y verificación de material entrante.',
+        rolOUT: 'Apertura del mostrador, revisión del planning diario, preparación de fichas de citas previas del día.',
+        foco: 'Flujo de recepción ágil.',
+        control: 'Notas registradas en Icare antes de las 10:30.'
+      },
+      {
+        id: 'slot-2',
+        time: '10:30 - 13:00',
+        name: 'Pico Mañana',
+        startMin: 10 * 60 + 30,
+        endMin: 13 * 60,
+        rolIN: 'Reparaciones de taller asignadas (bicis en proceso). Diagnósticos técnicos profundos.',
+        rolOUT: 'Atención en mostrador, recepción de bicis, citas de diagnóstico y tasaciones Buyback.',
+        foco: 'Diagnóstico riguroso.',
+        control: 'Evitar presupuestos imprecisos que causen gestos en caja.'
+      },
+      {
+        id: 'slot-3',
+        time: '13:00 - 14:30',
+        name: 'Valle Medio',
+        startMin: 13 * 60,
+        endMin: 14 * 60 + 30,
+        rolIN: 'Tratamiento y puesta a punto de bicis Segunda Vida. Limpieza y colocación de Hang Tags.',
+        rolOUT: 'Llamadas a clientes (notas terminadas / presupuestos). Gestión de mensajes y ventas en Wallapop.',
+        foco: 'Salida de stock y contacto cliente.',
+        control: '100% Hang Tags con procedencia indicada.'
+      },
+      {
+        id: 'slot-4',
+        time: '14:30 - 17:00',
+        name: 'Tarde Inicial',
+        startMin: 14 * 60 + 30,
+        endMin: 17 * 60,
+        rolIN: 'Mantenimiento del cementerio de bicis, desmontaje de bicis irrecuperables, reciclaje.',
+        rolOUT: 'Atención a clientes citas de tarde. Entregas de bicis terminadas y cobro riguroso.',
+        foco: 'Seguridad y orden.',
+        control: 'Despeje total de pasillos de tránsito.'
+      },
+      {
+        id: 'slot-5',
+        time: '17:00 - 19:30',
+        name: 'Pico Tarde',
+        startMin: 17 * 60,
+        endMin: 19 * 60 + 30,
+        rolIN: 'Soporte interno y reparaciones rápidas de taller.',
+        rolOUT: 'Refuerzo directo a mostrador IN según afluencia de clientes. Soporte a entregas rápidas. Atención continua mostrador, recepción de bicis para día siguiente, asesoramiento cliente.',
+        foco: 'Experiencia de cliente y fluidez.',
+        control: 'Speech de taller y presencia impecable.'
+      },
+      {
+        id: 'slot-6',
+        time: '19:30 - 21:00',
+        name: 'Cierre y Orden',
+        startMin: 19 * 60 + 30,
+        endMin: 21 * 60,
+        rolIN: 'Limpieza profunda del taller, purgado de compresor, herramientas ordenadas y residuos vaciados.',
+        rolOUT: 'Cierre de notas del día, verificación de notas no pagadas/pendientes y conciliación de caja.',
+        foco: 'Cierre operativo conforme.',
+        control: 'Cero herramientas fuera de panel, compresor apagado.'
+      },
+      {
+        id: 'slot-7',
+        time: '21:00 - 21:30',
+        name: 'Cierre Extendido y Seguridad',
+        startMin: 21 * 60,
+        endMin: 21 * 60 + 30,
+        rolIN: 'Bloqueo final de herramientas neumáticas, apagado eléctrico total y verificación de accesos.',
+        rolOUT: 'Arqueo definitivo de caja del taller y volcado de notas pendientes a la mañana siguiente.',
+        foco: 'Seguridad y clausura.',
+        control: 'Taller despejado, luces auxiliares apagadas y puertas cerradas.'
+      }
+    ];
+
+    const FACTORY_KPIS = {
+      preferentes: 42.5,
+      diagnosticos: 63.0,
+      vv: 11.8,
+      cestaMedia: 44.50
+    };
+
+    function loadInitial(key, fallback) {
+      try {
+        const val = localStorage.getItem(key);
+        return val ? JSON.parse(val) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    let state = {
+      basicos: loadInitial('t102_basicos', FACTORY_BASICOS),
+      techs: loadInitial('t102_techs', FACTORY_TECHS),
+      tasks: loadInitial('t102_tasks', FACTORY_TASKS),
+      tratado: loadInitial('t102_tratado', FACTORY_TRATADO),
+      pedidos: loadInitial('t102_pedidos', FACTORY_PEDIDOS),
+      enlaces: loadInitial('t102_enlaces', FACTORY_ENLACES),
+      incidencias: loadInitial('t102_incidencias', FACTORY_INCIDENCIAS),
+      matriz: loadInitial('t102_matriz', FACTORY_MATRIZ),
+      planning: loadInitial('t102_planning', {}),
+      kpis: loadInitial('t102_kpis', FACTORY_KPIS)
+    };
+
+    function saveState() {
+      try {
+        localStorage.setItem('t102_basicos', JSON.stringify(state.basicos));
+        localStorage.setItem('t102_techs', JSON.stringify(state.techs));
+        localStorage.setItem('t102_tasks', JSON.stringify(state.tasks));
+        localStorage.setItem('t102_tratado', JSON.stringify(state.tratado));
+        localStorage.setItem('t102_pedidos', JSON.stringify(state.pedidos));
+        localStorage.setItem('t102_enlaces', JSON.stringify(state.enlaces));
+        localStorage.setItem('t102_incidencias', JSON.stringify(state.incidencias));
+        localStorage.setItem('t102_matriz', JSON.stringify(state.matriz));
+        localStorage.setItem('t102_planning', JSON.stringify(state.planning));
+        localStorage.setItem('t102_kpis', JSON.stringify(state.kpis));
+      } catch (e) {
+        console.error('Storage error:', e);
+      }
+      updateBadges();
+      renderHeaderDashboard();
+    }
+
+    // CABECERA KPI DASHBOARD (2x2)
+    function renderHeaderDashboard() {
+      const k = state.kpis || FACTORY_KPIS;
+      const elPref = document.getElementById('kpiPrefVal');
+      if (elPref) {
+        elPref.textContent = `${k.preferentes}%`;
+        elPref.className = `font-mono text-xs font-black ${k.preferentes >= 40 ? 'text-emerald-400' : 'text-rose-500'}`;
+      }
+      const elDiag = document.getElementById('kpiDiagVal');
+      if (elDiag) {
+        elDiag.textContent = `${k.diagnosticos}%`;
+        elDiag.className = `font-mono text-xs font-black ${k.diagnosticos >= 60 ? 'text-emerald-400' : 'text-rose-500'}`;
+      }
+      const elVv = document.getElementById('kpiVvVal');
+      if (elVv) {
+        const sign = k.vv > 0 ? '+' : '';
+        elVv.textContent = `${sign}${k.vv}%`;
+        elVv.className = `font-mono text-xs font-black ${k.vv >= 10 ? 'text-emerald-400' : 'text-rose-500'}`;
+      }
+      const elCesta = document.getElementById('kpiCestaVal');
+      if (elCesta) {
+        elCesta.textContent = `${Number(k.cestaMedia).toFixed(1)}€`;
+        elCesta.className = `font-mono text-xs font-black ${k.cestaMedia >= 40 ? 'text-emerald-400' : 'text-rose-500'}`;
+      }
+    }
+
+    function openEditDashboardModal() {
+      const k = state.kpis || FACTORY_KPIS;
+      document.getElementById('dashPrefInput').value = k.preferentes;
+      document.getElementById('dashDiagInput').value = k.diagnosticos;
+      document.getElementById('dashVvInput').value = k.vv;
+      document.getElementById('dashCestaInput').value = k.cestaMedia;
+      document.getElementById('modalEditDashboard').classList.remove('hidden');
+    }
+
+    function closeEditDashboardModal() {
+      document.getElementById('modalEditDashboard').classList.add('hidden');
+    }
+
+    function saveDashboardCurrent() {
+      state.kpis = {
+        preferentes: parseFloat(document.getElementById('dashPrefInput').value) || 0,
+        diagnosticos: parseFloat(document.getElementById('dashDiagInput').value) || 0,
+        vv: parseFloat(document.getElementById('dashVvInput').value) || 0,
+        cestaMedia: parseFloat(document.getElementById('dashCestaInput').value) || 0
+      };
+      saveState();
+      closeEditDashboardModal();
+      showToast('Dashboard de KPIs actualizado');
+    }
+
+    // RELOJ
+    function updateLiveClock() {
+      const now = new Date();
+      const h = now.getHours().toString().padStart(2, '0');
+      const m = now.getMinutes().toString().padStart(2, '0');
+      const s = now.getSeconds().toString().padStart(2, '0');
+      const clockEl = document.getElementById('liveClock');
+      if (clockEl) clockEl.textContent = `${h}:${m}:${s}`;
+
+      const dateEl = document.getElementById('liveDate');
+      if (dateEl) {
+        const options = { weekday: 'short', day: 'numeric', month: 'short' };
+        dateEl.textContent = now.toLocaleDateString('es-ES', options);
+      }
+    }
+
+    // AUTO-RETORNO KIOSCO (60s)
+    let idleCountdown = 60;
+    let idleTimer = null;
+    let selectedTechId = null;
+
+    function resetIdleTimer() {
+      idleCountdown = 60;
+      updateIdleDisplay();
+    }
+
+    function startIdleTimer() {
+      clearInterval(idleTimer);
+      idleCountdown = 60;
+      document.getElementById('kioskIdleContainer').classList.remove('hidden');
+      updateIdleDisplay();
+      idleTimer = setInterval(() => {
+        idleCountdown--;
+        updateIdleDisplay();
+        if (idleCountdown <= 0) returnToKiosk();
+      }, 1000);
+    }
+
+    function stopIdleTimer() {
+      clearInterval(idleTimer);
+      document.getElementById('kioskIdleContainer').classList.add('hidden');
+    }
+
+    function updateIdleDisplay() {
+      const el = document.getElementById('idleSeconds');
+      if (el) el.textContent = idleCountdown;
+    }
+
+    function returnToKiosk() {
+      selectedTechId = null;
+      stopIdleTimer();
+      document.getElementById('viewIndividualTech').classList.add('hidden');
+      document.getElementById('tabKiosco').classList.remove('hidden');
+      renderKioscoGrid();
+    }
+
+    // NAVEGACIÓN
+    let activeNavTab = 'basicos';
+
+    function switchNavTab(tabName) {
+      activeNavTab = tabName;
+      selectedTechId = null;
+      stopIdleTimer();
+
+      const tabs = ['basicos', 'kiosco', 'tratado', 'planning', 'matriz', 'pedidos', 'incidencias', 'enlaces', 'reporting'];
+      tabs.forEach(t => {
+        const cap = t.charAt(0).toUpperCase() + t.slice(1);
+        const el = document.getElementById(`tab${cap}`);
+        const btn = document.getElementById(`nav-btn-${t}`);
+        if (!el || !btn) return;
+
+        if (t === tabName) {
+          el.classList.remove('hidden');
+          btn.className = "touch-btn nav-tab-btn active px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-2 bg-cyan-600 text-slate-950 shadow-lg shadow-cyan-600/30 transition flex-shrink-0";
+        } else {
+          el.classList.add('hidden');
+          btn.className = "touch-btn nav-tab-btn px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex-shrink-0";
+        }
+      });
+
+      document.getElementById('viewIndividualTech').classList.add('hidden');
+
+      if (tabName === 'basicos') renderBasicos();
+      if (tabName === 'kiosco') renderKioscoGrid();
+      if (tabName === 'tratado') renderTratado();
+      if (tabName === 'planning') renderPlanningGantt();
+      if (tabName === 'matriz') renderMatrizSlots();
+      if (tabName === 'pedidos') renderPedidos();
+      if (tabName === 'incidencias') renderIncidencias();
+      if (tabName === 'enlaces') renderEnlaces();
+      if (tabName === 'reporting') renderReporting();
+
+      updateBadges();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 1. BÁSICOS A GARANTIZAR
+    function renderBasicos() {
+      const container = document.getElementById('basicosContainer');
+      container.innerHTML = '';
+
+      const total = state.basicos.length;
+      const doneCount = state.basicos.filter(b => b.done).length;
+      document.getElementById('basicosProgressCounter').textContent = `${doneCount}/${total} Garantizados`;
+
+      state.basicos.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `rounded-3xl border-2 p-5 shadow-xl transition-all flex flex-col justify-between ${
+          item.done 
+            ? 'bg-slate-900/90 border-emerald-500/50' 
+            : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
+        }`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl bg-slate-950 text-cyan-400 border border-slate-800">
+                ${escapeHTML(item.cat)}
+              </span>
+              <button onclick="openBasicoModal('${item.id}')" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">
+                <i data-lucide="edit-2" class="w-3.5 h-3.5">✏️</i>
+              </button>
+            </div>
+            <p class="text-sm sm:text-base font-bold text-white mt-3 leading-relaxed">
+              ${escapeHTML(item.text)}
+            </p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+            <div class="text-xs">
+              <span class="text-slate-400 block text-[10px] uppercase font-bold">Responsable:</span>
+              <span class="font-extrabold text-white">${escapeHTML(item.resp)}</span>
+            </div>
+
+            <button onclick="toggleBasicoDone('${item.id}')" class="touch-btn px-4 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2 transition ${
+              item.done 
+                ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/25' 
+                : 'bg-slate-950 text-slate-400 border border-slate-700 hover:border-emerald-400'
+            }">
+              <span>${item.done ? '✓ GARANTIZADO' : 'MARCAR OK'}</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    function toggleBasicoDone(id) {
+      const b = state.basicos.find(item => item.id === id);
+      if (!b) return;
+      b.done = !b.done;
+      const now = new Date();
+      b.time = b.done ? `Hoy ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}` : 'Pendiente';
+      saveState();
+      renderBasicos();
+      showToast(b.done ? 'Básico garantizado' : 'Básico pendiente');
+    }
+
+    function openBasicoModal(id) {
+      if (id) {
+        const item = state.basicos.find(b => b.id === id);
+        if (!item) return;
+        document.getElementById('modalBasicoTitle').textContent = 'Editar Estándar Básico';
+        document.getElementById('editBasicoId').value = item.id;
+        document.getElementById('basicoTextInput').value = item.text;
+        document.getElementById('basicoCatInput').value = item.cat;
+        document.getElementById('basicoRespInput').value = item.resp;
+        document.getElementById('btnDeleteBasico').classList.remove('hidden');
+      } else {
+        document.getElementById('modalBasicoTitle').textContent = 'Nuevo Estándar Básico';
+        document.getElementById('editBasicoId').value = '';
+        document.getElementById('basicoTextInput').value = '';
+        document.getElementById('basicoCatInput').value = 'Operativa';
+        document.getElementById('basicoRespInput').value = 'Todo el Equipo';
+        document.getElementById('btnDeleteBasico').classList.add('hidden');
+      }
+      document.getElementById('modalBasico').classList.remove('hidden');
+    }
+
+    function closeBasicoModal() {
+      document.getElementById('modalBasico').classList.add('hidden');
+    }
+
+    function saveBasicoCurrent() {
+      const id = document.getElementById('editBasicoId').value;
+      const text = document.getElementById('basicoTextInput').value.trim();
+      const cat = document.getElementById('basicoCatInput').value.trim() || 'General';
+      const resp = document.getElementById('basicoRespInput').value.trim() || 'Todo el Equipo';
+
+      if (!text) {
+        showToast('Escribe la descripción del estándar');
+        return;
+      }
+
+      if (id) {
+        const item = state.basicos.find(b => b.id === id);
+        if (item) {
+          item.text = text;
+          item.cat = cat;
+          item.resp = resp;
+        }
+      } else {
+        state.basicos.push({
+          id: 'b-' + Date.now(),
+          text,
+          cat,
+          resp,
+          done: false,
+          time: 'Pendiente'
+        });
+      }
+
+      saveState();
+      closeBasicoModal();
+      renderBasicos();
+      showToast('Estándar guardado');
+    }
+
+    function deleteBasicoCurrent() {
+      const id = document.getElementById('editBasicoId').value;
+      if (!id) return;
+      state.basicos = state.basicos.filter(b => b.id !== id);
+      saveState();
+      closeBasicoModal();
+      renderBasicos();
+      showToast('Estándar eliminado');
+    }
+
+    // 2. KIOSCO TÉCNICOS & CHECKLIST
+    function renderKioscoGrid() {
+      const container = document.getElementById('techniciansGrid');
+      container.innerHTML = '';
+
+      state.techs.forEach(tech => {
+        const tasks = state.tasks.filter(t => t.techId === tech.id);
+        const total = tasks.length;
+        const okCount = tasks.filter(t => t.status === 'ok').length;
+        const koCount = tasks.filter(t => t.status === 'ko').length;
+        const pct = total === 0 ? 0 : Math.round((okCount / total) * 100);
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border-2 border-slate-800 hover:border-cyan-500 rounded-3xl p-5 sm:p-6 shadow-xl cursor-pointer touch-btn flex flex-col justify-between transition-all group relative";
+        card.onclick = () => openTechChecklist(tech.id);
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div class="w-14 h-14 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-black text-xl text-white overflow-hidden shadow-lg group-hover:scale-105 transition">
+                ${tech.photo 
+                  ? `<img src="${tech.photo}" alt="${tech.name}" class="w-full h-full object-cover">` 
+                  : `<span style="color: ${tech.color}">${tech.initials}</span>`
+                }
+              </div>
+
+              <div class="text-right">
+                <span class="text-xs font-mono font-black text-slate-400 block uppercase">Checklist</span>
+                <span class="text-xl font-mono font-black ${pct === 100 ? 'text-emerald-400' : 'text-cyan-400'}">${okCount}/${total}</span>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h3 class="text-xl font-black text-white uppercase group-hover:text-cyan-400 transition">${escapeHTML(tech.name)}</h3>
+              <p class="text-xs font-semibold text-slate-400 mt-0.5">${escapeHTML(tech.role)}</p>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="w-full bg-slate-950 h-2.5 rounded-full mt-4 overflow-hidden p-0.5 border border-slate-800">
+              <div class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
+            ${koCount > 0 
+              ? `<span class="text-rose-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> ${koCount} KO activo</span>` 
+              : `<span class="text-emerald-400">Sin incidencias</span>`
+            }
+            <span class="text-cyan-400 flex items-center gap-1 group-hover:translate-x-1 transition">Ver Tareas &rarr;</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    let selectedFreqFilter = 'all';
+
+    function openTechChecklist(techId) {
+      selectedTechId = techId;
+      const tech = state.techs.find(t => t.id === techId);
+      if (!tech) return;
+
+      document.getElementById('tabKiosco').classList.add('hidden');
+      document.getElementById('viewIndividualTech').classList.remove('hidden');
+
+      document.getElementById('techDetailName').textContent = tech.name;
+      document.getElementById('techDetailRoleBadge').textContent = tech.role;
+
+      const avatarWrap = document.getElementById('techDetailAvatarWrapper');
+      avatarWrap.innerHTML = `
+        <div class="w-16 h-16 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-black text-2xl text-white overflow-hidden shadow-xl">
+          ${tech.photo 
+            ? `<img src="${tech.photo}" alt="${tech.name}" class="w-full h-full object-cover">` 
+            : `<span style="color: ${tech.color}">${tech.initials}</span>`
+          }
+        </div>
+      `;
+
+      filterTechTasks('all');
+      startIdleTimer();
+    }
+
+    function filterTechTasks(freq) {
+      selectedFreqFilter = freq;
+      document.querySelectorAll('.filter-freq-btn').forEach(b => {
+        b.className = "touch-btn filter-freq-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800";
+      });
+      const activeBtn = document.getElementById(`filter-btn-${freq}`);
+      if (activeBtn) activeBtn.className = "touch-btn filter-freq-btn active px-4 py-2 rounded-xl text-xs font-black bg-cyan-600 text-slate-950";
+
+      renderTechTasksList();
+    }
+
+    function renderTechTasksList() {
+      if (!selectedTechId) return;
+      const tech = state.techs.find(t => t.id === selectedTechId);
+      const container = document.getElementById('techTasksContainer');
+      container.innerHTML = '';
+
+      let allTechTasks = state.tasks.filter(t => t.techId === selectedTechId);
+      const okCount = allTechTasks.filter(t => t.status === 'ok').length;
+      const total = allTechTasks.length;
+      const pct = total === 0 ? 0 : Math.round((okCount / total) * 100);
+
+      document.getElementById('techDetailProgressText').textContent = `${okCount}/${total}`;
+      document.getElementById('techDetailPercent').textContent = `${pct}%`;
+      const circle = document.getElementById('techDetailProgressCircle');
+      if (circle) circle.setAttribute('stroke-dasharray', `${pct}, 100`);
+
+      let filtered = allTechTasks;
+      if (selectedFreqFilter !== 'all') {
+        filtered = filtered.filter(t => t.freq === selectedFreqFilter);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center text-slate-400">
+            <p class="font-bold text-sm">No hay tareas asignadas para esta frecuencia.</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(task => {
+        const card = document.createElement('div');
+        card.className = `rounded-3xl border-2 p-5 shadow-xl transition-all ${
+          task.status === 'ok' ? 'bg-slate-900/90 border-emerald-500/50' :
+          task.status === 'ko' ? 'bg-rose-950/20 border-rose-500/80' :
+          'bg-slate-900 border-slate-800'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1.5 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  ${escapeHTML(task.freq)}
+                </span>
+                <span class="text-[10px] font-bold text-slate-400">${escapeHTML(task.cat)}</span>
+              </div>
+              <p class="text-sm sm:text-base font-bold text-white leading-relaxed">
+                ${escapeHTML(task.title)}
+              </p>
+              ${task.notes ? `
+                <div class="p-2.5 rounded-xl bg-slate-950 border border-rose-500/30 text-rose-300 text-xs mt-2">
+                  <span class="font-black uppercase text-[10px] block">Incidencia Registrada:</span>
+                  ${escapeHTML(task.notes)}
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button onclick="setTaskStatus('${task.id}', 'ok')" class="touch-btn px-4 py-3 rounded-2xl font-black text-xs flex items-center gap-1.5 transition ${
+                task.status === 'ok' 
+                  ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400' 
+                  : 'bg-slate-950 text-slate-400 border border-slate-800 hover:border-emerald-500'
+              }">
+                <span>✓ CONFORME OK</span>
+              </button>
+
+              <button onclick="openKoModal('${task.id}')" class="touch-btn px-4 py-3 rounded-2xl font-black text-xs flex items-center gap-1.5 transition ${
+                task.status === 'ko' 
+                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-2 ring-rose-400' 
+                  : 'bg-slate-950 text-slate-400 border border-slate-800 hover:border-rose-500'
+              }">
+                <span>✕ KO</span>
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    function setTaskStatus(taskId, status) {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      task.status = status;
+      if (status === 'ok') task.notes = '';
+      saveState();
+      renderTechTasksList();
+      showToast(status === 'ok' ? 'Tarea validada OK' : 'Estado actualizado');
+    }
+
+    let activeKoTaskId = null;
+    function openKoModal(taskId) {
+      activeKoTaskId = taskId;
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      document.getElementById('modalKoTaskTitle').textContent = task.title;
+      document.getElementById('modalKoNotes').value = task.notes || '';
+      document.getElementById('modalKo').classList.remove('hidden');
+    }
+
+    function closeKoModal() {
+      document.getElementById('modalKo').classList.add('hidden');
+    }
+
+    function confirmKoModal() {
+      if (!activeKoTaskId) return;
+      const notes = document.getElementById('modalKoNotes').value.trim();
+      const task = state.tasks.find(t => t.id === activeKoTaskId);
+      if (task) {
+        task.status = 'ko';
+        task.notes = notes || 'Incidencia detectada sin notas detalladas.';
+      }
+      saveState();
+      closeKoModal();
+      renderTechTasksList();
+      showToast('Incidencia KO registrada');
+    }
+
+    // GESTIÓN DE TÉCNICOS & SUBIDA FOTOS
+    function openTechEditModal(techId) {
+      if (techId) {
+        const tech = state.techs.find(t => t.id === techId);
+        if (!tech) return;
+        document.getElementById('modalTechEditTitle').textContent = `Editar a ${tech.name}`;
+        document.getElementById('editTechId').value = tech.id;
+        document.getElementById('editTechName').value = tech.name;
+        document.getElementById('editTechRole').value = tech.role;
+        document.getElementById('editTechPhotoUrl').value = tech.photo || '';
+        updatePhotoPreview(tech.photo, tech.initials);
+        document.getElementById('btnDeleteTech').classList.remove('hidden');
+      } else {
+        document.getElementById('modalTechEditTitle').textContent = 'Añadir Nuevo Técnico';
+        document.getElementById('editTechId').value = '';
+        document.getElementById('editTechName').value = '';
+        document.getElementById('editTechRole').value = 'Mecánico de Taller';
+        document.getElementById('editTechPhotoUrl').value = '';
+        updatePhotoPreview('', 'TT');
+        document.getElementById('btnDeleteTech').classList.add('hidden');
+      }
+      document.getElementById('modalTechEdit').classList.remove('hidden');
+    }
+
+    function closeTechEditModal() {
+      document.getElementById('modalTechEdit').classList.add('hidden');
+    }
+
+    function updatePhotoPreview(url, initials) {
+      const prev = document.getElementById('editTechPhotoPreview');
+      if (url) {
+        prev.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+      } else {
+        prev.innerHTML = `<span class="text-cyan-400 font-black">${initials || 'TT'}</span>`;
+      }
+    }
+
+    document.getElementById('editTechPhotoFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const b64 = evt.target.result;
+          document.getElementById('editTechPhotoUrl').value = b64;
+          updatePhotoPreview(b64, 'TT');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function saveCurrentTech() {
+      const id = document.getElementById('editTechId').value;
+      const name = document.getElementById('editTechName').value.trim();
+      const role = document.getElementById('editTechRole').value.trim();
+      const photo = document.getElementById('editTechPhotoUrl').value.trim();
+
+      if (!name) {
+        showToast('El nombre del técnico es obligatorio');
+        return;
+      }
+
+      const initials = name.slice(0, 2).toUpperCase();
+
+      if (id) {
+        const tech = state.techs.find(t => t.id === id);
+        if (tech) {
+          tech.name = name;
+          tech.role = role;
+          tech.photo = photo;
+          tech.initials = initials;
+        }
+      } else {
+        state.techs.push({
+          id: 'tech-' + Date.now(),
+          name,
+          role,
+          photo,
+          initials,
+          color: '#06B6D4'
+        });
+      }
+
+      saveState();
+      closeTechEditModal();
+      renderKioscoGrid();
+      showToast('Técnico guardado correctamente');
+    }
+
+    function deleteCurrentTech() {
+      const id = document.getElementById('editTechId').value;
+      if (!id) return;
+      state.techs = state.techs.filter(t => t.id !== id);
+      saveState();
+      closeTechEditModal();
+      renderKioscoGrid();
+      showToast('Técnico eliminado');
+    }
+
+    // 3. TRATADO Y DISPONIBLE (CON LLAMADAS Y EMAILS)
+    let selectedTratadoFilter = 'all';
+    let modalCallsState = [false, false, false];
+    let modalEmailsState = [false, false, false];
+
+    function filterTratado(flt) {
+      selectedTratadoFilter = flt;
+      document.querySelectorAll('.trat-flt').forEach(b => {
+        b.className = "touch-btn trat-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800";
+      });
+      const act = document.getElementById(`flt-trat-${flt}`);
+      if (act) act.className = "touch-btn trat-flt active px-3.5 py-1.5 rounded-xl text-xs font-black bg-cyan-600 text-slate-950";
+      renderTratado();
+    }
+
+    function renderTratado() {
+      const container = document.getElementById('tratadoContainer');
+      container.innerHTML = '';
+
+      let list = state.tratado;
+      document.getElementById('navTratadoBadge').textContent = list.length;
+
+      if (selectedTratadoFilter !== 'all') {
+        const targetCalls = parseInt(selectedTratadoFilter);
+        list = list.filter(item => {
+          const count = (item.calls || []).filter(c => c).length;
+          return count === targetCalls;
+        });
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center text-slate-400">
+            <p class="font-bold text-sm">No hay notas en Tratado y Disponible para este filtro.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach(item => {
+        const card = document.createElement('div');
+        const calls = item.calls || [false, false, false];
+        const emails = item.emails || [false, false, false];
+        const callCount = calls.filter(c => c).length;
+        const emailCount = emails.filter(c => c).length;
+
+        card.className = "bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-3xl p-5 shadow-xl flex flex-col justify-between transition-all";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-black text-xs px-2.5 py-1 rounded-xl bg-slate-950 text-cyan-400 border border-slate-800">
+                  #${escapeHTML(item.number)}
+                </span>
+                <span class="font-mono font-black text-sm text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                  ${Number(item.price || 0).toFixed(2)} €
+                </span>
+              </div>
+
+              <button onclick="openTratadoModal('${item.id}')" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">
+                <i data-lucide="edit-2" class="w-4 h-4">✏️</i>
+              </button>
+            </div>
+
+            <div class="mt-3">
+              <h4 class="text-base font-black text-white">${escapeHTML(item.customer)}</h4>
+              <div class="flex flex-wrap items-center gap-3 mt-1 text-xs">
+                <span class="font-mono font-bold text-slate-300 flex items-center gap-1.5">
+                  <i data-lucide="phone" class="w-3.5 h-3.5 text-cyan-400">📞</i>
+                  <a href="tel:${escapeHTML(item.phone)}" class="hover:underline">${escapeHTML(item.phone)}</a>
+                </span>
+                ${item.email ? `
+                  <span class="font-mono text-slate-400 flex items-center gap-1.5">
+                    <i data-lucide="mail" class="w-3.5 h-3.5 text-amber-400">✉️</i>
+                    <a href="mailto:${escapeHTML(item.email)}" class="hover:underline truncate max-w-[160px]">${escapeHTML(item.email)}</a>
+                  </span>
+                ` : ''}
+              </div>
+            </div>
+
+            <div class="mt-3 p-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300">
+              <span class="text-[10px] font-extrabold uppercase text-slate-400 block mb-0.5">Trabajos Realizados:</span>
+              <p class="line-clamp-2 leading-relaxed">${escapeHTML(item.summary || 'Ajuste general.')}</p>
+            </div>
+
+            <!-- Avisos Telefónicos -->
+            <div class="mt-4 pt-3 border-t border-slate-800">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Avisos Telefónicos (${callCount}/3)</span>
+                <span class="text-[10px] font-mono font-bold text-slate-400">${escapeHTML(item.lastCall || 'Sin llamadas')}</span>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                ${[0, 1, 2].map(idx => `
+                  <button onclick="toggleCardCallBadge('${item.id}', ${idx})" class="touch-btn py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 border transition ${
+                    calls[idx]
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20'
+                      : 'bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-600'
+                  }">
+                    <span>Llamada ${idx + 1}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Avisos Email -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Avisos Email (${emailCount}/3)</span>
+                <span class="text-[10px] font-mono font-bold text-slate-400">${escapeHTML(item.lastEmail || 'Sin envíos')}</span>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                ${[0, 1, 2].map(idx => `
+                  <button onclick="toggleCardEmailBadge('${item.id}', ${idx})" class="touch-btn py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 border transition ${
+                    emails[idx]
+                      ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md shadow-cyan-500/20'
+                      : 'bg-slate-950 text-slate-500 border-slate-800 hover:border-slate-600'
+                  }">
+                    <span>Email ${idx + 1}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="mt-3 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+              <span class="text-[10px] font-black uppercase text-amber-400 block mb-0.5">Notas de Contacto:</span>
+              <p class="text-slate-300 italic">${escapeHTML(item.notes || 'Sin comentarios registrados.')}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+              ✓ Lista para Entrega
+            </span>
+            <button onclick="deleteTratadoDirect('${item.id}')" class="text-rose-400 hover:underline text-[11px] font-bold">
+              Entregada / Quitar
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    function toggleCardCallBadge(id, idx) {
+      const item = state.tratado.find(t => t.id === id);
+      if (!item) return;
+      if (!item.calls) item.calls = [false, false, false];
+      item.calls[idx] = !item.calls[idx];
+      const now = new Date();
+      item.lastCall = `Hoy ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      saveState();
+      renderTratado();
+      showToast(`Llamada ${idx + 1} actualizada`);
+    }
+
+    function toggleCardEmailBadge(id, idx) {
+      const item = state.tratado.find(t => t.id === id);
+      if (!item) return;
+      if (!item.emails) item.emails = [false, false, false];
+      item.emails[idx] = !item.emails[idx];
+      const now = new Date();
+      item.lastEmail = `Hoy ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      saveState();
+      renderTratado();
+      showToast(`Email ${idx + 1} actualizado`);
+    }
+
+    function openTratadoModal(id) {
+      if (id) {
+        const item = state.tratado.find(t => t.id === id);
+        if (!item) return;
+        document.getElementById('modalTratadoTitle').textContent = 'Editar Nota Tratada';
+        document.getElementById('editTratadoId').value = item.id;
+        document.getElementById('tratadoNumber').value = item.number;
+        document.getElementById('tratadoPrice').value = item.price;
+        document.getElementById('tratadoCustomer').value = item.customer;
+        document.getElementById('tratadoPhone').value = item.phone;
+        document.getElementById('tratadoEmail').value = item.email || '';
+        document.getElementById('tratadoSummary').value = item.summary;
+        document.getElementById('tratadoLastCall').value = item.lastCall || '';
+        document.getElementById('tratadoLastEmail').value = item.lastEmail || '';
+        document.getElementById('tratadoNotes').value = item.notes || '';
+        modalCallsState = [...(item.calls || [false, false, false])];
+        modalEmailsState = [...(item.emails || [false, false, false])];
+        document.getElementById('btnDeleteTratado').classList.remove('hidden');
+      } else {
+        document.getElementById('modalTratadoTitle').textContent = 'Nueva Nota Tratado y Disponible';
+        document.getElementById('editTratadoId').value = '';
+        document.getElementById('tratadoNumber').value = '102-' + Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('tratadoPrice').value = '';
+        document.getElementById('tratadoCustomer').value = '';
+        document.getElementById('tratadoPhone').value = '';
+        document.getElementById('tratadoEmail').value = '';
+        document.getElementById('tratadoSummary').value = '';
+        document.getElementById('tratadoLastCall').value = 'Sin llamadas';
+        document.getElementById('tratadoLastEmail').value = 'Sin envíos';
+        document.getElementById('tratadoNotes').value = '';
+        modalCallsState = [false, false, false];
+        modalEmailsState = [false, false, false];
+        document.getElementById('btnDeleteTratado').classList.add('hidden');
+      }
+      updateModalCallButtons();
+      updateModalEmailButtons();
+      document.getElementById('modalTratado').classList.remove('hidden');
+    }
+
+    function closeTratadoModal() {
+      document.getElementById('modalTratado').classList.add('hidden');
+    }
+
+    function toggleModalCallBadge(num) {
+      const idx = num - 1;
+      modalCallsState[idx] = !modalCallsState[idx];
+      const now = new Date();
+      document.getElementById('tratadoLastCall').value = `Hoy ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      updateModalCallButtons();
+    }
+
+    function toggleModalEmailBadge(num) {
+      const idx = num - 1;
+      modalEmailsState[idx] = !modalEmailsState[idx];
+      const now = new Date();
+      document.getElementById('tratadoLastEmail').value = `Hoy ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      updateModalEmailButtons();
+    }
+
+    function updateModalCallButtons() {
+      [1, 2, 3].forEach(num => {
+        const btn = document.getElementById(`modCallBtn${num}`);
+        if (!btn) return;
+        btn.className = modalCallsState[num - 1]
+          ? "touch-btn py-2 rounded-xl border border-emerald-400 bg-emerald-500 text-slate-950 font-black text-xs"
+          : "touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs";
+      });
+    }
+
+    function updateModalEmailButtons() {
+      [1, 2, 3].forEach(num => {
+        const btn = document.getElementById(`modEmailBtn${num}`);
+        if (!btn) return;
+        btn.className = modalEmailsState[num - 1]
+          ? "touch-btn py-2 rounded-xl border border-cyan-400 bg-cyan-500 text-slate-950 font-black text-xs"
+          : "touch-btn py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 font-bold text-xs";
+      });
+    }
+
+    function saveTratadoCurrent() {
+      const id = document.getElementById('editTratadoId').value;
+      const number = document.getElementById('tratadoNumber').value.trim() || '102-S/N';
+      const price = parseFloat(document.getElementById('tratadoPrice').value) || 0;
+      const customer = document.getElementById('tratadoCustomer').value.trim() || 'Cliente';
+      const phone = document.getElementById('tratadoPhone').value.trim() || 'Sin teléfono';
+      const email = document.getElementById('tratadoEmail').value.trim();
+      const summary = document.getElementById('tratadoSummary').value.trim();
+      const lastCall = document.getElementById('tratadoLastCall').value.trim();
+      const lastEmail = document.getElementById('tratadoLastEmail').value.trim();
+      const notes = document.getElementById('tratadoNotes').value.trim();
+
+      if (id) {
+        const item = state.tratado.find(t => t.id === id);
+        if (item) {
+          item.number = number;
+          item.price = price;
+          item.customer = customer;
+          item.phone = phone;
+          item.email = email;
+          item.summary = summary;
+          item.calls = [...modalCallsState];
+          item.emails = [...modalEmailsState];
+          item.lastCall = lastCall;
+          item.lastEmail = lastEmail;
+          item.notes = notes;
+        }
+      } else {
+        state.tratado.push({
+          id: 'trat-' + Date.now(),
+          number,
+          price,
+          customer,
+          phone,
+          email,
+          summary,
+          calls: [...modalCallsState],
+          emails: [...modalEmailsState],
+          lastCall,
+          lastEmail,
+          notes
+        });
+      }
+
+      saveState();
+      closeTratadoModal();
+      renderTratado();
+      showToast('Nota de Tratado y Disponible guardada');
+    }
+
+    function deleteTratadoCurrent() {
+      const id = document.getElementById('editTratadoId').value;
+      if (!id) return;
+      deleteTratadoDirect(id);
+      closeTratadoModal();
+    }
+
+    function deleteTratadoDirect(id) {
+      state.tratado = state.tratado.filter(t => t.id !== id);
+      saveState();
+      renderTratado();
+      showToast('Nota retirada');
+    }
+
+    // 4. PLANNING HORARIO (07:00 A 22:00)
+    let selectedPlanningDate = new Date();
+
+    function getPlanningDateKey(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
+    function ensurePlanningForDate(dateKey) {
+      if (!state.planning[dateKey]) {
+        state.planning[dateKey] = {
+          'tech-marti': [
+            { start: 7, end: 11, role: 'Rol IN (Taller & Potro)' },
+            { start: 11, end: 15, role: 'Rol OUT (Mostrador & Citas)' }
+          ],
+          'tech-raul': [
+            { start: 13, end: 17, role: 'Rol IN (Taller & Potro)' },
+            { start: 17, end: 21, role: 'Rol OUT (Mostrador & Citas)' }
+          ],
+          'tech-david': [
+            { start: 9, end: 14, role: 'Descanso / EID / Gestión' },
+            { start: 14, end: 18, role: 'Rol IN (Taller & Potro)' }
+          ],
+          'tech-pau': [
+            { start: 8, end: 13, role: '2ª Vida / Buyback' },
+            { start: 13, end: 16, role: 'Rol OUT (Mostrador & Citas)' }
+          ],
+          'tech-robert': [
+            { start: 14, end: 18, role: 'Rol OUT (Mostrador & Citas)' },
+            { start: 18, end: 22, role: '2ª Vida / Buyback' }
+          ]
+        };
+        saveState();
+      }
+    }
+
+    function changePlanningDay(delta) {
+      selectedPlanningDate.setDate(selectedPlanningDate.getDate() + delta);
+      renderPlanningGantt();
+    }
+
+    function onPlanningDateChange(val) {
+      if (val) {
+        selectedPlanningDate = new Date(val);
+        renderPlanningGantt();
+      }
+    }
+
+    function renderPlanningGantt() {
+      const dateKey = getPlanningDateKey(selectedPlanningDate);
+      ensurePlanningForDate(dateKey);
+
+      document.getElementById('planningDatePicker').value = dateKey;
+      const todayKey = getPlanningDateKey(new Date());
+      const label = document.getElementById('planningDateLabel');
+      if (dateKey === todayKey) {
+        label.textContent = 'Hoy';
+      } else {
+        label.textContent = selectedPlanningDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+      }
+
+      const rowsContainer = document.getElementById('planningTimelineRows');
+      rowsContainer.innerHTML = '';
+
+      const daySchedule = state.planning[dateKey] || {};
+
+      state.techs.forEach(tech => {
+        const blocks = daySchedule[tech.id] || [];
+        const row = document.createElement('div');
+        row.className = "flex items-center py-2 hover:bg-slate-900/30 rounded-2xl transition group";
+
+        const leftCol = `
+          <div class="w-[200px] flex items-center gap-3 pl-2 pr-3 cursor-pointer flex-shrink-0" onclick="openPlanningBlockModal('${tech.id}')">
+            <div class="w-11 h-11 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-black text-sm text-white overflow-hidden flex-shrink-0 shadow-md group-hover:border-cyan-400 transition">
+              ${tech.photo 
+                ? `<img src="${tech.photo}" alt="${tech.name}" class="w-full h-full object-cover">`
+                : `<span style="color: ${tech.color}">${tech.initials}</span>`
+              }
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="text-sm font-black uppercase text-white truncate block group-hover:text-cyan-400 transition">${escapeHTML(tech.name)}</span>
+              <span class="text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-0.5">+ Tramo</span>
+            </div>
+          </div>
+        `;
+
+        let timelineCells = `
+          <div class="flex-1 relative h-14 bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-inner">
+            <div class="absolute inset-0 flex divide-x divide-slate-800/40 pointer-events-none">
+              ${Array.from({ length: 15 }).map(() => `<div class="flex-1 h-full"></div>`).join('')}
+            </div>
+        `;
+
+        blocks.forEach(b => {
+          const start = Math.max(7, b.start);
+          const end = Math.min(22, b.end);
+          if (end <= start) return;
+
+          const leftPct = ((start - 7) / 15) * 100;
+          const widthPct = ((end - start) / 15) * 100;
+
+          let bgClass = "bg-cyan-500/90 text-slate-950 border-cyan-300";
+          if (b.role.includes('OUT') || b.role.includes('Mostrador')) {
+            bgClass = "bg-amber-500/90 text-slate-950 border-amber-300";
+          } else if (b.role.includes('2ª Vida') || b.role.includes('Buyback')) {
+            bgClass = "bg-emerald-500/90 text-slate-950 border-emerald-300";
+          } else if (b.role.includes('Descanso') || b.role.includes('Gestión')) {
+            bgClass = "bg-purple-600/90 text-white border-purple-300";
+          }
+
+          timelineCells += `
+            <div onclick="openPlanningBlockModal('${tech.id}')" 
+                 title="${b.start}:00 - ${b.end}:00 | ${escapeHTML(b.role)}"
+                 class="absolute top-1.5 bottom-1.5 rounded-xl border-2 flex items-center justify-between px-3 font-bold text-xs shadow-lg cursor-pointer transition hover:scale-[1.01] hover:brightness-110 z-10 ${bgClass}"
+                 style="left: ${leftPct}%; width: ${widthPct}%;">
+              <span class="font-extrabold uppercase text-xs truncate tracking-wide pr-1">${escapeHTML(b.role)}</span>
+              <span class="font-mono font-black text-xs opacity-95 flex-shrink-0 bg-black/25 px-2 py-0.5 rounded-md whitespace-nowrap">
+                ${b.start.toString().padStart(2, '0')}h - ${b.end.toString().padStart(2, '0')}h (${b.end - b.start}h)
+              </span>
+            </div>
+          `;
+        });
+
+        timelineCells += `</div>`;
+        row.innerHTML = leftCol + timelineCells;
+        rowsContainer.appendChild(row);
+      });
+
+      safeCreateIcons();
+    }
+
+    let activePlanningTechId = null;
+    function openPlanningBlockModal(techId) {
+      activePlanningTechId = techId;
+      const tech = state.techs.find(t => t.id === techId);
+      if (!tech) return;
+
+      document.getElementById('planTechId').value = tech.id;
+      document.getElementById('modalPlanningSubtitle').textContent = `${tech.name} • ${getPlanningDateKey(selectedPlanningDate)}`;
+
+      const startSelect = document.getElementById('planStartHour');
+      const endSelect = document.getElementById('planEndHour');
+      startSelect.innerHTML = '';
+      endSelect.innerHTML = '';
+
+      for (let h = 7; h <= 21; h++) {
+        startSelect.innerHTML += `<option value="${h}">${h.toString().padStart(2, '0')}:00</option>`;
+      }
+      for (let h = 8; h <= 22; h++) {
+        endSelect.innerHTML += `<option value="${h}">${h.toString().padStart(2, '0')}:00</option>`;
+      }
+
+      startSelect.value = "7";
+      endSelect.value = "15";
+      document.getElementById('modalPlanningBlock').classList.remove('hidden');
+    }
+
+    function closePlanningModal() {
+      document.getElementById('modalPlanningBlock').classList.add('hidden');
+    }
+
+    function addPlanningBlock() {
+      if (!activePlanningTechId) return;
+      const dateKey = getPlanningDateKey(selectedPlanningDate);
+      if (!state.planning[dateKey]) state.planning[dateKey] = {};
+      if (!state.planning[dateKey][activePlanningTechId]) state.planning[dateKey][activePlanningTechId] = [];
+
+      const start = parseInt(document.getElementById('planStartHour').value);
+      const end = parseInt(document.getElementById('planEndHour').value);
+      const role = document.getElementById('planRoleSelect').value;
+
+      if (end <= start) {
+        showToast('La hora fin debe ser posterior a la de inicio');
+        return;
+      }
+
+      state.planning[dateKey][activePlanningTechId].push({ start, end, role });
+      saveState();
+      closePlanningModal();
+      renderPlanningGantt();
+      showToast('Tramo horario asignado');
+    }
+
+    function clearTechDayBlocks() {
+      if (!activePlanningTechId) return;
+      const dateKey = getPlanningDateKey(selectedPlanningDate);
+      if (state.planning[dateKey] && state.planning[dateKey][activePlanningTechId]) {
+        state.planning[dateKey][activePlanningTechId] = [];
+        saveState();
+        closePlanningModal();
+        renderPlanningGantt();
+        showToast('Turnos del día eliminados');
+      }
+    }
+
+    // 5. MATRIZ FRANJAS HORARIAS IN / OUT
+    function parseTimeToMinutes(tStr) {
+      if (!tStr) return 0;
+      const parts = tStr.split(':');
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1] || '0', 10);
+    }
+
+    function renderMatrizSlots() {
+      const container = document.getElementById('matrizSlotsContainer');
+      container.innerHTML = '';
+
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      let activeFound = false;
+
+      state.matriz.forEach(slot => {
+        const sMin = slot.startMin !== undefined ? slot.startMin : parseTimeToMinutes(slot.time.split('-')[0].trim());
+        const eMin = slot.endMin !== undefined ? slot.endMin : parseTimeToMinutes(slot.time.split('-')[1].trim());
+
+        const isCurrent = currentMinutes >= sMin && currentMinutes < eMin;
+        if (isCurrent) {
+          activeFound = true;
+          document.getElementById('currentActiveSlotName').textContent = `${slot.time} (${slot.name})`;
+        }
+
+        const card = document.createElement('div');
+        card.className = `rounded-3xl border-2 transition-all p-6 sm:p-7 shadow-xl ${
+          isCurrent 
+            ? 'bg-slate-900 border-emerald-500 ring-2 ring-emerald-500/20' 
+            : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+              <span class="text-base sm:text-lg font-mono font-black text-cyan-400 bg-slate-950 px-4 py-2 rounded-2xl border border-slate-800 flex items-center gap-2.5 shadow-inner">
+                <i data-lucide="clock" class="w-4 h-4 text-cyan-400">🕒</i>
+                <span>${escapeHTML(slot.time)}</span>
+              </span>
+              <h3 class="text-xl sm:text-2xl font-black text-white uppercase tracking-tight">${escapeHTML(slot.name)}</h3>
+            </div>
+
+            <div class="flex items-center gap-2">
+              ${isCurrent ? `
+                <span class="text-xs font-black uppercase px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 flex items-center gap-2 shadow-md shadow-emerald-500/30">
+                  <span class="w-2.5 h-2.5 rounded-full bg-slate-950 animate-ping"></span>
+                  <span>Franja En Curso</span>
+                </span>
+              ` : `
+                <span class="text-xs font-semibold px-3 py-1 rounded-xl bg-slate-950 text-slate-400 border border-slate-800">Programada</span>
+              `}
+
+              <button onclick="openMatrizSlotModal('${slot.id}')" class="touch-btn p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 ml-1">
+                <i data-lucide="edit-3" class="w-4 h-4">✏️</i>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
+            <div class="bg-cyan-950/20 border border-cyan-800/40 rounded-2xl p-5 flex flex-col justify-between shadow-inner">
+              <div>
+                <div class="flex items-center gap-2 mb-2.5">
+                  <span class="w-3.5 h-3.5 rounded-full bg-cyan-400 flex-shrink-0"></span>
+                  <h4 class="text-xs font-black uppercase tracking-wider text-cyan-300">Rol IN • Operaciones &amp; Taller Interno</h4>
+                </div>
+                <p class="text-sm sm:text-base font-semibold text-slate-100 leading-relaxed">${escapeHTML(slot.rolIN)}</p>
+              </div>
+              <div class="mt-4 pt-3 border-t border-cyan-800/30 text-xs text-cyan-400/90 font-mono">
+                Enfoque: Reparaciones en potro, purgado, recepción y 5S.
+              </div>
+            </div>
+
+            <div class="bg-amber-950/20 border border-amber-800/40 rounded-2xl p-5 flex flex-col justify-between shadow-inner">
+              <div>
+                <div class="flex items-center gap-2 mb-2.5">
+                  <span class="w-3.5 h-3.5 rounded-full bg-amber-400 flex-shrink-0"></span>
+                  <h4 class="text-xs font-black uppercase tracking-wider text-amber-300">Rol OUT • Cliente &amp; Mostrador Taller</h4>
+                </div>
+                <p class="text-sm sm:text-base font-semibold text-slate-100 leading-relaxed">${escapeHTML(slot.rolOUT)}</p>
+              </div>
+              <div class="mt-4 pt-3 border-t border-amber-800/30 text-xs text-amber-400/90 font-mono">
+                Enfoque: Citas previas, llamadas a clientes, Wallapop y cobro riguroso en caja.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-4 border-t border-slate-800 text-xs">
+            <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 flex items-start gap-3 shadow-inner">
+              <span class="text-emerald-400 text-lg">🎯</span>
+              <div>
+                <span class="font-extrabold uppercase text-slate-400 text-[10px] block tracking-wider">Foco Prioritario / Entregable</span>
+                <span class="font-bold text-sm text-white">${escapeHTML(slot.foco)}</span>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 flex items-start gap-3 shadow-inner">
+              <span class="text-amber-400 text-lg">⚠️</span>
+              <div>
+                <span class="font-extrabold uppercase text-slate-400 text-[10px] block tracking-wider">Puntos Críticos de Control</span>
+                <span class="font-bold text-sm text-amber-200">${escapeHTML(slot.control)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      if (!activeFound) {
+        document.getElementById('currentActiveSlotName').textContent = 'Fuera de Horario Taller (07:00 - 21:30)';
+      }
+
+      safeCreateIcons();
+    }
+
+    function openMatrizSlotModal(slotId) {
+      if (slotId) {
+        const slot = state.matriz.find(s => s.id === slotId);
+        if (!slot) return;
+        document.getElementById('modalMatrizSlotTitle').textContent = `Editar Franja: ${slot.name}`;
+        document.getElementById('editMatrizSlotId').value = slot.id;
+
+        const parts = slot.time.split('-');
+        document.getElementById('slotStartTime').value = (parts[0] || '09:00').trim();
+        document.getElementById('slotEndTime').value = (parts[1] || '10:30').trim();
+        document.getElementById('slotName').value = slot.name;
+        document.getElementById('slotRolIN').value = slot.rolIN;
+        document.getElementById('slotRolOUT').value = slot.rolOUT;
+        document.getElementById('slotFoco').value = slot.foco;
+        document.getElementById('slotControl').value = slot.control;
+        document.getElementById('btnDeleteMatrizSlot').classList.remove('hidden');
+      } else {
+        document.getElementById('modalMatrizSlotTitle').textContent = 'Nueva Franja Horaria';
+        document.getElementById('editMatrizSlotId').value = '';
+        document.getElementById('slotStartTime').value = '09:00';
+        document.getElementById('slotEndTime').value = '10:30';
+        document.getElementById('slotName').value = 'Nueva Franja';
+        document.getElementById('slotRolIN').value = '';
+        document.getElementById('slotRolOUT').value = '';
+        document.getElementById('slotFoco').value = '';
+        document.getElementById('slotControl').value = '';
+        document.getElementById('btnDeleteMatrizSlot').classList.add('hidden');
+      }
+      document.getElementById('modalMatrizSlot').classList.remove('hidden');
+    }
+
+    function closeMatrizSlotModal() {
+      document.getElementById('modalMatrizSlot').classList.add('hidden');
+    }
+
+    function saveMatrizSlotCurrent() {
+      const id = document.getElementById('editMatrizSlotId').value;
+      const start = document.getElementById('slotStartTime').value.trim() || '09:00';
+      const end = document.getElementById('slotEndTime').value.trim() || '10:30';
+      const name = document.getElementById('slotName').value.trim() || 'Franja Horaria';
+      const rolIN = document.getElementById('slotRolIN').value.trim() || 'Operaciones de taller.';
+      const rolOUT = document.getElementById('slotRolOUT').value.trim() || 'Atención en mostrador.';
+      const foco = document.getElementById('slotFoco').value.trim() || 'Entregable general.';
+      const control = document.getElementById('slotControl').value.trim() || 'Punto de control operativo.';
+
+      const time = `${start} - ${end}`;
+      const startMin = parseTimeToMinutes(start);
+      const endMin = parseTimeToMinutes(end);
+
+      if (id) {
+        const slot = state.matriz.find(s => s.id === id);
+        if (slot) {
+          slot.time = time;
+          slot.name = name;
+          slot.startMin = startMin;
+          slot.endMin = endMin;
+          slot.rolIN = rolIN;
+          slot.rolOUT = rolOUT;
+          slot.foco = foco;
+          slot.control = control;
+        }
+      } else {
+        state.matriz.push({
+          id: 'slot-' + Date.now(),
+          time,
+          name,
+          startMin,
+          endMin,
+          rolIN,
+          rolOUT,
+          foco,
+          control
+        });
+      }
+
+      saveState();
+      closeMatrizSlotModal();
+      renderMatrizSlots();
+      showToast('Franja horaria guardada');
+    }
+
+    function deleteMatrizSlotCurrent() {
+      const id = document.getElementById('editMatrizSlotId').value;
+      if (!id) return;
+      state.matriz = state.matriz.filter(s => s.id !== id);
+      saveState();
+      closeMatrizSlotModal();
+      renderMatrizSlots();
+      showToast('Franja horaria eliminada');
+    }
+
+    function resetMatrizSlotsToDefault() {
+      state.matriz = JSON.parse(JSON.stringify(FACTORY_MATRIZ));
+      saveState();
+      renderMatrizSlots();
+      showToast('Matriz restaurada a valores por defecto');
+    }
+
+    // 6. PEDIDOS TT
+    let selectedPedidoFilter = 'all';
+
+    function filterPedidos(flt) {
+      selectedPedidoFilter = flt;
+      document.querySelectorAll('.ped-flt').forEach(b => {
+        b.className = "touch-btn ped-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800";
+      });
+      const active = document.getElementById(
+        flt === 'all' ? 'flt-ped-all' :
+        flt === 'Pendiente' ? 'flt-ped-pend' :
+        flt === 'En tránsito' ? 'flt-ped-tran' : 'flt-ped-rec'
+      );
+      if (active) active.className = "touch-btn ped-flt active px-3.5 py-1.5 rounded-xl text-xs font-black bg-cyan-600 text-slate-950";
+      renderPedidos();
+    }
+
+    function renderPedidos() {
+      const container = document.getElementById('pedidosContainer');
+      container.innerHTML = '';
+
+      let list = state.pedidos || [];
+      document.getElementById('navPedidosBadge').textContent = list.filter(p => p.status !== 'Recibido').length;
+
+      if (selectedPedidoFilter !== 'all') {
+        list = list.filter(p => p.status === selectedPedidoFilter);
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center text-slate-400">
+            <p class="font-bold text-sm">No hay pedidos registrados con este filtro.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach(item => {
+        const tech = state.techs.find(t => t.id === item.techId);
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-3xl p-5 shadow-xl flex flex-col justify-between transition-all";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <span class="font-mono font-black text-xs px-2.5 py-1 rounded-xl bg-slate-950 text-amber-400 border border-slate-800">
+                #${escapeHTML(item.number)}
+              </span>
+
+              <button onclick="openPedidoModal('${item.id}')" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">
+                <i data-lucide="edit-2" class="w-4 h-4">✏️</i>
+              </button>
+            </div>
+
+            <div class="mt-3">
+              <h4 class="text-base font-black text-white leading-tight">${escapeHTML(item.piece)}</h4>
+              <p class="text-xs font-mono font-bold text-slate-300 mt-1">Ref: ${escapeHTML(item.ref)}</p>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">Fecha: ${escapeHTML(item.date)}</p>
+            </div>
+
+            ${item.notes ? `
+              <div class="mt-3 p-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300">
+                <span class="text-[10px] font-extrabold uppercase text-slate-400 block mb-0.5">Observaciones:</span>
+                <p class="leading-relaxed">${escapeHTML(item.notes)}</p>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 font-medium">Solicitado por:</span>
+              <span class="font-bold text-white uppercase">${tech ? escapeHTML(tech.name) : 'Taller'}</span>
+            </div>
+
+            <div class="pt-2 flex items-center justify-between">
+              <span class="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg ${
+                item.status === 'Recibido' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                item.status === 'En tránsito' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              }">${escapeHTML(item.status)}</span>
+
+              <button onclick="cyclePedidoStatus('${item.id}')" class="touch-btn text-xs font-black text-amber-400 hover:underline">
+                Avanzar Estado &rarr;
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    function cyclePedidoStatus(id) {
+      const item = state.pedidos.find(p => p.id === id);
+      if (!item) return;
+      const flow = ['Pendiente', 'En tránsito', 'Recibido'];
+      const nextIdx = (flow.indexOf(item.status) + 1) % flow.length;
+      item.status = flow[nextIdx];
+      saveState();
+      renderPedidos();
+      showToast(`Pedido: ${item.status}`);
+    }
+
+    function openPedidoModal(id) {
+      document.getElementById('pedTechSelect').innerHTML = state.techs.map(t => 
+        `<option value="${t.id}">${t.name} (${t.role})</option>`
+      ).join('');
+
+      if (id) {
+        const item = state.pedidos.find(p => p.id === id);
+        if (!item) return;
+        document.getElementById('modalPedidoTitle').textContent = 'Editar Pedido TT';
+        document.getElementById('editPedidoId').value = item.id;
+        document.getElementById('pedNumber').value = item.number;
+        document.getElementById('pedRef').value = item.ref;
+        document.getElementById('pedPiece').value = item.piece;
+        document.getElementById('pedTechSelect').value = item.techId;
+        document.getElementById('pedStatus').value = item.status;
+        document.getElementById('pedDate').value = item.date;
+        document.getElementById('pedNotes').value = item.notes || '';
+        document.getElementById('btnDeletePedido').classList.remove('hidden');
+      } else {
+        document.getElementById('modalPedidoTitle').textContent = 'Nuevo Pedido de Pieza TT';
+        document.getElementById('editPedidoId').value = '';
+        document.getElementById('pedNumber').value = 'PED-' + Math.floor(1000 + Math.random() * 9000);
+        document.getElementById('pedRef').value = '';
+        document.getElementById('pedPiece').value = '';
+        document.getElementById('pedStatus').value = 'Pendiente';
+        const now = new Date();
+        document.getElementById('pedDate').value = `Hoy ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        document.getElementById('pedNotes').value = '';
+        document.getElementById('btnDeletePedido').classList.add('hidden');
+      }
+      document.getElementById('modalPedido').classList.remove('hidden');
+    }
+
+    function closePedidoModal() {
+      document.getElementById('modalPedido').classList.add('hidden');
+    }
+
+    function savePedidoCurrent() {
+      const id = document.getElementById('editPedidoId').value;
+      const number = document.getElementById('pedNumber').value.trim() || 'PED-S/N';
+      const ref = document.getElementById('pedRef').value.trim() || 'S/R';
+      const piece = document.getElementById('pedPiece').value.trim();
+      const techId = document.getElementById('pedTechSelect').value;
+      const status = document.getElementById('pedStatus').value;
+      const date = document.getElementById('pedDate').value.trim();
+      const notes = document.getElementById('pedNotes').value.trim();
+
+      if (!piece) {
+        showToast('Escribe la descripción de la pieza');
+        return;
+      }
+
+      if (id) {
+        const item = state.pedidos.find(p => p.id === id);
+        if (item) {
+          item.number = number;
+          item.ref = ref;
+          item.piece = piece;
+          item.techId = techId;
+          item.status = status;
+          item.date = date;
+          item.notes = notes;
+        }
+      } else {
+        if (!state.pedidos) state.pedidos = [];
+        state.pedidos.push({
+          id: 'ped-' + Date.now(),
+          number,
+          ref,
+          piece,
+          techId,
+          status,
+          date,
+          notes
+        });
+      }
+
+      saveState();
+      closePedidoModal();
+      renderPedidos();
+      showToast('Pedido guardado correctamente');
+    }
+
+    function deletePedidoCurrent() {
+      const id = document.getElementById('editPedidoId').value;
+      if (!id) return;
+      state.pedidos = state.pedidos.filter(p => p.id !== id);
+      saveState();
+      closePedidoModal();
+      renderPedidos();
+      showToast('Pedido eliminado');
+    }
+
+    // 7. INCIDENCIAS DE TALLER
+    let selectedIncidenciaFilter = 'all';
+
+    function filterIncidencias(flt) {
+      selectedIncidenciaFilter = flt;
+      document.querySelectorAll('.inc-flt').forEach(b => {
+        b.className = "touch-btn inc-flt px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 border border-slate-800";
+      });
+      const active = document.getElementById(
+        flt === 'all' ? 'flt-inc-all' :
+        flt === 'Abierta' ? 'flt-inc-open' :
+        flt === 'En curso' ? 'flt-inc-prog' :
+        flt === 'Incidencia crítica' ? 'flt-inc-crit' : 'flt-inc-res'
+      );
+      if (active) active.className = "touch-btn inc-flt active px-3.5 py-1.5 rounded-xl text-xs font-black bg-cyan-600 text-slate-950";
+      renderIncidencias();
+    }
+
+    function renderIncidencias() {
+      const container = document.getElementById('incidenciasContainer');
+      container.innerHTML = '';
+
+      let list = state.incidencias;
+      const criticasCount = list.filter(i => (i.severity === 'Incidencia crítica' || i.severity === 'Marrón urgente') && i.status !== 'Resuelta').length;
+
+      if (criticasCount > 0) {
+        document.getElementById('headerIncidenciaAlert').classList.remove('hidden');
+        document.getElementById('headerIncidenciaCount').textContent = `${criticasCount} INCIDENCIA CRÍTICA ACTIVA`;
+        document.getElementById('navIncidenciasBadge').classList.remove('hidden');
+        document.getElementById('navIncidenciasBadge').textContent = criticasCount;
+      } else {
+        document.getElementById('headerIncidenciaAlert').classList.add('hidden');
+        document.getElementById('navIncidenciasBadge').classList.add('hidden');
+      }
+
+      if (selectedIncidenciaFilter === 'Incidencia crítica') {
+        list = list.filter(i => i.severity === 'Incidencia crítica' || i.severity === 'Marrón urgente');
+      } else if (selectedIncidenciaFilter !== 'all') {
+        list = list.filter(i => i.status === selectedIncidenciaFilter);
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center text-slate-400">
+            <p class="font-bold text-sm">No hay incidencias registradas con este filtro.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach(item => {
+        const isCritica = item.severity === 'Incidencia crítica' || item.severity === 'Marrón urgente';
+        const assignee = state.techs.find(t => t.id === item.assigneeId);
+        const card = document.createElement('div');
+
+        card.className = `rounded-3xl border-2 p-5 shadow-xl transition-all flex flex-col justify-between ${
+          isCritica 
+            ? 'bg-rose-950/20 border-rose-500/70 shadow-rose-950/30' 
+            : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+        }`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <span class="text-[10px] font-black uppercase px-2.5 py-1 rounded-xl ${
+                isCritica ? 'bg-rose-600 text-white incidencia-pulsing' :
+                item.severity === 'Alta' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                'bg-slate-800 text-slate-300'
+              }">${escapeHTML(item.severity)}</span>
+
+              <button onclick="openIncidenciaModal('${item.id}')" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">
+                <i data-lucide="edit-2" class="w-4 h-4">✏️</i>
+              </button>
+            </div>
+
+            <div class="mt-3">
+              <h4 class="text-base font-black text-white leading-tight">${escapeHTML(item.title)}</h4>
+              <p class="text-xs text-slate-400 font-mono mt-1">${escapeHTML(item.date || '')}</p>
+            </div>
+
+            <div class="mt-3 p-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300">
+              <span class="text-[10px] font-extrabold uppercase text-slate-400 block mb-0.5">Acción / Descripción:</span>
+              <p class="leading-relaxed">${escapeHTML(item.description || 'Sin detalles.')}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 font-medium">Asignado a:</span>
+              <span class="font-bold text-white uppercase">${assignee ? escapeHTML(assignee.name) : 'Sin asignar'}</span>
+            </div>
+
+            <div class="pt-2 flex items-center justify-between">
+              <span class="text-[10px] font-black uppercase px-2.5 py-1 rounded-lg ${
+                item.status === 'Resuelta' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                item.status === 'En curso' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              }">${escapeHTML(item.status)}</span>
+
+              <button onclick="toggleIncidenciaStatus('${item.id}')" class="touch-btn text-xs font-black text-cyan-400 hover:underline">
+                Cambiar Estado &rarr;
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    function toggleIncidenciaStatus(id) {
+      const item = state.incidencias.find(i => i.id === id);
+      if (!item) return;
+      const flow = ['Abierta', 'En curso', 'Resuelta'];
+      const nextIdx = (flow.indexOf(item.status) + 1) % flow.length;
+      item.status = flow[nextIdx];
+      saveState();
+      renderIncidencias();
+      showToast(`Incidencia: ${item.status}`);
+    }
+
+    function openIncidenciaModal(id) {
+      document.getElementById('incAssigneeSelect').innerHTML = state.techs.map(t => 
+        `<option value="${t.id}">${t.name} (${t.role})</option>`
+      ).join('');
+
+      if (id) {
+        const item = state.incidencias.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById('modalIncidenciaTitle').textContent = 'Editar Incidencia';
+        document.getElementById('editIncidenciaId').value = item.id;
+        document.getElementById('incTitle').value = item.title;
+        document.getElementById('incSeverity').value = (item.severity === 'Marrón urgente') ? 'Incidencia crítica' : item.severity;
+        document.getElementById('incAssigneeSelect').value = item.assigneeId;
+        document.getElementById('incStatus').value = item.status;
+        document.getElementById('incDate').value = item.date;
+        document.getElementById('incDescription').value = item.description;
+        document.getElementById('btnDeleteIncidencia').classList.remove('hidden');
+      } else {
+        document.getElementById('modalIncidenciaTitle').textContent = 'Nueva Incidencia de Taller';
+        document.getElementById('editIncidenciaId').value = '';
+        document.getElementById('incTitle').value = '';
+        document.getElementById('incSeverity').value = 'Incidencia crítica';
+        document.getElementById('incStatus').value = 'Abierta';
+        const now = new Date();
+        document.getElementById('incDate').value = `Hoy ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        document.getElementById('incDescription').value = '';
+        document.getElementById('btnDeleteIncidencia').classList.add('hidden');
+      }
+      document.getElementById('modalIncidencia').classList.remove('hidden');
+    }
+
+    function closeIncidenciaModal() {
+      document.getElementById('modalIncidencia').classList.add('hidden');
+    }
+
+    function saveIncidenciaCurrent() {
+      const id = document.getElementById('editIncidenciaId').value;
+      const title = document.getElementById('incTitle').value.trim();
+      const severity = document.getElementById('incSeverity').value;
+      const assigneeId = document.getElementById('incAssigneeSelect').value;
+      const status = document.getElementById('incStatus').value;
+      const date = document.getElementById('incDate').value.trim();
+      const description = document.getElementById('incDescription').value.trim();
+
+      if (!title) {
+        showToast('Escribe un título para la incidencia');
+        return;
+      }
+
+      if (id) {
+        const item = state.incidencias.find(i => i.id === id);
+        if (item) {
+          item.title = title;
+          item.severity = severity;
+          item.assigneeId = assigneeId;
+          item.status = status;
+          item.date = date;
+          item.description = description;
+        }
+      } else {
+        state.incidencias.push({
+          id: 'inc-' + Date.now(),
+          title,
+          severity,
+          assigneeId,
+          status,
+          date,
+          description
+        });
+      }
+
+      saveState();
+      closeIncidenciaModal();
+      renderIncidencias();
+      showToast('Incidencia guardada');
+    }
+
+    function deleteIncidenciaCurrent() {
+      const id = document.getElementById('editIncidenciaId').value;
+      if (!id) return;
+      state.incidencias = state.incidencias.filter(i => i.id !== id);
+      saveState();
+      closeIncidenciaModal();
+      renderIncidencias();
+      showToast('Incidencia eliminada');
+    }
+
+    // 8. ENLACES ÚTILES
+    function renderEnlaces() {
+      const container = document.getElementById('enlacesContainer');
+      container.innerHTML = '';
+
+      state.enlaces.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-3xl p-5 shadow-xl flex flex-col justify-between transition-all";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div class="w-10 h-10 rounded-2xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-black">
+                <i data-lucide="link" class="w-5 h-5">🔗</i>
+              </div>
+
+              <button onclick="openEnlaceModal('${item.id}')" class="p-2 text-slate-400 hover:text-white rounded-xl bg-slate-800">
+                <i data-lucide="edit-2" class="w-4 h-4">✏️</i>
+              </button>
+            </div>
+
+            <div class="mt-3">
+              <h4 class="text-lg font-black text-white">${escapeHTML(item.title)}</h4>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">${escapeHTML(item.desc || '')}</p>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between">
+            <span class="text-[10px] font-mono text-cyan-400 truncate max-w-[170px]">${escapeHTML(item.url)}</span>
+            <a href="${escapeHTML(item.url)}" target="_blank" rel="noopener noreferrer" class="touch-btn bg-purple-600 hover:bg-purple-500 text-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-purple-600/30">
+              <span>Abrir</span>
+              <span>↗</span>
+            </a>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    function openEnlaceModal(id) {
+      if (id) {
+        const item = state.enlaces.find(e => e.id === id);
+        if (!item) return;
+        document.getElementById('modalEnlaceTitle').textContent = 'Editar Enlace';
+        document.getElementById('editEnlaceId').value = item.id;
+        document.getElementById('enlaceTitle').value = item.title;
+        document.getElementById('enlaceUrl').value = item.url;
+        document.getElementById('enlaceDesc').value = item.desc || '';
+        document.getElementById('btnDeleteEnlace').classList.remove('hidden');
+      } else {
+        document.getElementById('modalEnlaceTitle').textContent = 'Nuevo Enlace Útil';
+        document.getElementById('editEnlaceId').value = '';
+        document.getElementById('enlaceTitle').value = '';
+        document.getElementById('enlaceUrl').value = 'https://';
+        document.getElementById('enlaceDesc').value = '';
+        document.getElementById('btnDeleteEnlace').classList.add('hidden');
+      }
+      document.getElementById('modalEnlace').classList.remove('hidden');
+    }
+
+    function closeEnlaceModal() {
+      document.getElementById('modalEnlace').classList.add('hidden');
+    }
+
+    function saveEnlaceCurrent() {
+      const id = document.getElementById('editEnlaceId').value;
+      const title = document.getElementById('enlaceTitle').value.trim();
+      const url = document.getElementById('enlaceUrl').value.trim();
+      const desc = document.getElementById('enlaceDesc').value.trim();
+
+      if (!title || !url) {
+        showToast('Completa título y enlace URL');
+        return;
+      }
+
+      if (id) {
+        const item = state.enlaces.find(e => e.id === id);
+        if (item) {
+          item.title = title;
+          item.url = url;
+          item.desc = desc;
+        }
+      } else {
+        state.enlaces.push({
+          id: 'enl-' + Date.now(),
+          title,
+          url,
+          desc
+        });
+      }
+
+      saveState();
+      closeEnlaceModal();
+      renderEnlaces();
+      showToast('Enlace guardado');
+    }
+
+    function deleteEnlaceCurrent() {
+      const id = document.getElementById('editEnlaceId').value;
+      if (!id) return;
+      state.enlaces = state.enlaces.filter(e => e.id !== id);
+      saveState();
+      closeEnlaceModal();
+      renderEnlaces();
+      showToast('Enlace eliminado');
+    }
+
+    // 9. REPORTING & KPIS
+    function renderReporting() {
+      const container = document.getElementById('reportingCardsGrid');
+      container.innerHTML = '';
+
+      state.techs.forEach(tech => {
+        const tasks = state.tasks.filter(t => t.techId === tech.id);
+        const total = tasks.length;
+        const okCount = tasks.filter(t => t.status === 'ok').length;
+        const koCount = tasks.filter(t => t.status === 'ko').length;
+        const pendingCount = tasks.filter(t => t.status === 'pending').length;
+        const pct = total === 0 ? 0 : Math.round((okCount / total) * 100);
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4";
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center font-black text-white text-base">
+                ${tech.photo 
+                  ? `<img src="${tech.photo}" alt="${tech.name}" class="w-full h-full object-cover">`
+                  : `<span style="color: ${tech.color}">${tech.initials}</span>`
+                }
+              </div>
+              <div>
+                <h4 class="text-lg font-black text-white uppercase">${escapeHTML(tech.name)}</h4>
+                <span class="text-xs text-slate-400 font-semibold">${escapeHTML(tech.role)}</span>
+              </div>
+            </div>
+            <span class="font-mono font-black text-xl ${pct === 100 ? 'text-emerald-400' : 'text-cyan-400'}">${pct}%</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-emerald-950/30 border border-emerald-500/30 p-2.5 rounded-2xl">
+              <span class="text-[10px] font-black uppercase text-emerald-400 block">OK</span>
+              <span class="font-mono font-black text-base text-emerald-300">${okCount}</span>
+            </div>
+            <div class="bg-rose-950/30 border border-rose-500/30 p-2.5 rounded-2xl">
+              <span class="text-[10px] font-black uppercase text-rose-400 block">KO</span>
+              <span class="font-mono font-black text-base text-rose-300">${koCount}</span>
+            </div>
+            <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-2xl">
+              <span class="text-[10px] font-black uppercase text-slate-400 block">Pend.</span>
+              <span class="font-mono font-black text-base text-slate-200">${pendingCount}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      safeCreateIcons();
+    }
+
+    function exportFullAuditCSV() {
+      let csv = "Tipo,ID,Responsable,Titulo,Detalle,Estado\n";
+      state.basicos.forEach(b => {
+        csv += `Basico,${b.id},${b.resp},"${b.text.replace(/"/g, '""')}","${b.cat}",${b.done ? 'OK' : 'Pendiente'}\n`;
+      });
+      state.tasks.forEach(t => {
+        const tech = state.techs.find(tec => tec.id === t.techId);
+        csv += `Checklist,${t.id},${tech ? tech.name : ''},"${t.title.replace(/"/g, '""')}","${t.notes.replace(/"/g, '""')}",${t.status}\n`;
+      });
+      state.tratado.forEach(tr => {
+        csv += `Tratado,${tr.number},${tr.customer},"${tr.summary.replace(/"/g, '""')}","${tr.price} EUR - Llamadas: ${tr.calls.filter(c => c).length}/3",Disponible\n`;
+      });
+      state.incidencias.forEach(i => {
+        const tech = state.techs.find(tec => tec.id === i.assigneeId);
+        csv += `Incidencia,${i.id},${tech ? tech.name : ''},"${i.title.replace(/"/g, '""')}","${i.description.replace(/"/g, '""')}",${i.status}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Auditoria_Terrassa_102_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Auditoría CSV descargada');
+    }
+
+    function resetChecklistDaily() {
+      state.tasks.forEach(t => {
+        t.status = 'pending';
+        t.notes = '';
+      });
+      saveState();
+      renderReporting();
+      showToast('Checklist reseteado a pendiente');
+    }
+
+    function updateBadges() {
+      const pendingBasicos = state.basicos.filter(b => !b.done).length;
+      const el = document.getElementById('headerSummaryPending');
+      if (el) el.textContent = `${pendingBasicos} Básicos pendientes hoy`;
+
+      const criticasCount = state.incidencias.filter(i => (i.severity === 'Incidencia crítica' || i.severity === 'Marrón urgente') && i.status !== 'Resuelta').length;
+      if (criticasCount > 0) {
+        document.getElementById('headerIncidenciaAlert').classList.remove('hidden');
+        document.getElementById('headerIncidenciaCount').textContent = `${criticasCount} INCIDENCIA CRÍTICA ACTIVA`;
+        document.getElementById('navIncidenciasBadge').classList.remove('hidden');
+        document.getElementById('navIncidenciasBadge').textContent = criticasCount;
+      } else {
+        document.getElementById('headerIncidenciaAlert').classList.add('hidden');
+        document.getElementById('navIncidenciasBadge').classList.add('hidden');
+      }
+
+      document.getElementById('navTratadoBadge').textContent = state.tratado.length;
+      if (state.pedidos) {
+        document.getElementById('navPedidosBadge').textContent = state.pedidos.filter(p => p.status !== 'Recibido').length;
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      const text = document.getElementById('toastMsg');
+      if (!toast || !text) return;
+      text.textContent = msg;
+      toast.classList.remove('translate-y-32');
+      setTimeout(() => {
+        toast.classList.add('translate-y-32');
+      }, 2500);
+    }
+
+    // ARRANQUE AUTOMÁTICO PROTEGIDO
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        setInterval(updateLiveClock, 1000);
+        updateLiveClock();
+        renderHeaderDashboard();
+        switchNavTab('basicos');
+        updateBadges();
+        safeCreateIcons();
+      } catch (err) {
+        console.error('Initialization error caught:', err);
+      }
+    });
+  </script>
+</body>
+</html>
